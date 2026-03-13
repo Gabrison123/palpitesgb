@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>palpitesGB</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #ffffff;
+            --text-color: #333333;
+            --accent-color: #ff0000;
+            --sidebar-bg: #f4f4f4;
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #1a1a1a;
+            --text-color: #ffffff;
+            --sidebar-bg: #2d2d2d;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: 0.3s;
+            overflow-x: hidden;
+        }
+
+        /* --- TELA DE LOGIN --- */
+        #login-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background: linear-gradient(135deg, #ff0000 0%, #000 100%);
+            color: white;
+        }
+
+        .login-box {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 40px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            text-align: center;
+        }
+
+        input {
+            display: block;
+            margin: 10px auto;
+            padding: 12px;
+            border-radius: 10px;
+            border: none;
+            width: 250px;
+        }
+
+        .btn-login {
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        /* --- DASHBOARD (PÓS LOGIN) --- */
+        #main-content {
+            display: none; /* Escondido até logar */
+            height: 100vh;
+            text-align: center;
+            position: relative;
+        }
+
+        .header-top {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 30px;
+            cursor: pointer;
+            z-index: 100;
+        }
+
+        .welcome-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .site-name { font-size: 1.5rem; margin-bottom: 0; }
+        .welcome-text { font-size: 3rem; font-weight: 800; margin-top: 0; }
+        .user-name { color: var(--accent-color); }
+
+        /* --- SIDEBAR ANIMADA --- */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: -300px; /* Escondida */
+            width: 280px;
+            height: 100%;
+            background-color: var(--sidebar-bg);
+            transition: 0.4s cubic-bezier(0.77,0.2,0.05,1.0);
+            z-index: 99;
+            padding-top: 80px;
+            box-shadow: 5px 0 15px rgba(0,0,0,0.2);
+        }
+
+        .sidebar.active { left: 0; }
+
+        .sidebar-item {
+            padding: 15px 30px;
+            font-size: 18px;
+            cursor: pointer;
+            text-align: left;
+            transition: 0.2s;
+        }
+
+        .sidebar-item:hover { background: rgba(255, 0, 0, 0.1); color: var(--accent-color); }
+        
+        .divider { height: 1px; background: #ccc; margin: 20px 0; }
+
+    </style>
+</head>
+<body>
+
+    <div id="login-screen">
+        <div class="login-box">
+            <h1>palpitesGB</h1>
+            <p>Faça login para continuar</p>
+            <input type="email" id="email" placeholder="Seu e-mail">
+            <input type="text" id="username" placeholder="Seu nome de usuário">
+            <button class="btn-login" onclick="fazerLogin()">Entrar</button>
+        </div>
+    </div>
+
+    <div id="main-content">
+        <div class="header-top" onclick="toggleMenu()">☰</div>
+
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-item" onclick="toggleTheme()">🌓 Mudar Tema</div>
+            <div class="sidebar-item">🔔 Notificações por Email</div>
+            <div class="divider"></div>
+            <div class="sidebar-item">🏆 Campeonatos</div>
+            <div class="sidebar-item">⚽ Últimos Jogos</div>
+            <div class="sidebar-item">👥 Usuários</div>
+            <div class="sidebar-item">👤 Meu Perfil</div>
+            <div class="divider"></div>
+            <div class="sidebar-item" onclick="location.reload()" style="color: var(--accent-color);">🚪 Sair</div>
+        </div>
+
+        <div class="welcome-container">
+            <p class="site-name">palpitesGB</p>
+            <h1 class="welcome-text">Seja Bem-Vindo <span class="user-name" id="display-name"></span></h1>
+        </div>
+    </div>
+
+    <script>
+        function fazerLogin() {
+            const nome = document.getElementById('username').value;
+            if (nome.trim() === "") {
+                alert("Por favor, digite seu nome!");
+                return;
+            }
+            document.getElementById('display-name').innerText = nome;
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('main-content').style.display = 'block';
+        }
+
+        function toggleMenu() {
+            document.getElementById('sidebar').classList.toggle('active');
+        }
+
+        function toggleTheme() {
+            const body = document.body;
+            const currentTheme = body.getAttribute('data-theme');
+            if (currentTheme === 'dark') {
+                body.removeAttribute('data-theme');
+            } else {
+                body.setAttribute('data-theme', 'dark');
+            }
+        }
+    </script>
+</body>
+</html>
