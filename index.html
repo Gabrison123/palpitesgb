@@ -170,16 +170,13 @@
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, query, where, getDocs, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // COLE AQUI AS SUAS CHAVES DO FIREBASE
         const firebaseConfig = {
             apiKey: "AIzaSyBmUFO1e0s1_jxb2cv4yP8BgKGCcTXr3r0",
             authDomain: "palpitesgb.firebaseapp.com",
-            databaseURL: "https://palpitesgb-default-rtdb.firebaseio.com",
             projectId: "palpitesgb",
             storageBucket: "palpitesgb.firebasestorage.app",
             messagingSenderId: "549071427367",
-            appId: "1:549071427367:web:2941483e02c07a0d5b3b02",
-            measurementId: "G-8QG2ZHJKT7"
+            appId: "1:549071427367:web:2941483e02c07a0d5b3b02"
         };
 
         const app = initializeApp(firebaseConfig);
@@ -196,20 +193,13 @@
         ];
         let avatarEscolha = "";
 
-        // 1. AUTENTICAÇÃO E SETUP
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 const userDoc = await getDoc(doc(db, "usuarios", user.uid));
                 if (!userDoc.exists()) {
                     showSetup();
                 } else {
-                    const data = userDoc.data();
-                    if (data.status === "pendente" && user.email !== "souldketchup@gmail.com") {
-                        alert("Aguardando autorização do dono do site...");
-                        signOut(auth);
-                        return;
-                    }
-                    loadUserDashboard(data);
+                    loadUserDashboard(userDoc.data());
                 }
             } else {
                 document.getElementById('login-screen').style.display = 'flex';
@@ -241,12 +231,11 @@
             await setDoc(doc(db, "usuarios", auth.currentUser.uid), {
                 nome: nome, avatar: avatarEscolha, pontos: 0,
                 email: auth.currentUser.email, isAdmin: isAdmin,
-                status: isAdmin ? "aprovado" : "pendente"
+                status: "aprovado" // <-- QUALQUER UM ENTRA DIRETO AGORA
             });
             location.reload();
         };
 
-        // 2. CARREGAR DASHBOARD
         function loadUserDashboard(data) {
             document.getElementById('setup-perfil').style.display = 'none';
             document.getElementById('login-screen').style.display = 'none';
@@ -263,7 +252,6 @@
             carregarJogosParaAposta();
         }
 
-        // 3. LÓGICA DO RANKING
         async function loadRanking() {
             const q = query(collection(db, "usuarios"), where("pontos", ">", 0), orderBy("pontos", "desc"), limit(50));
             const snap = await getDocs(q);
@@ -275,88 +263,60 @@
                 count++;
             });
             html += '</table>';
-            document.getElementById('ranking-list').innerHTML = snap.empty ? "Nenhum ponto marcado ainda. Faça suas apostas!" : html;
+            document.getElementById('ranking-list').innerHTML = snap.empty ? "Nenhum ponto marcado ainda." : html;
         }
 
-        // 4. LÓGICA DE JOGOS E APOSTAS (ADMIN E USUÁRIOS)
         window.adicionarJogoBD = async () => {
             const campeonato = document.getElementById('adm-camp-nome').value;
             const timeA = document.getElementById('adm-time-a').value;
             const timeB = document.getElementById('adm-time-b').value;
             const dataJogo = document.getElementById('adm-jogo-data').value;
-
-            if (!campeonato || !timeA || !timeB || !dataJogo) return alert("Preencha todos os campos do jogo!");
-
-            try {
-                const jogoId = "jogo_" + Date.now();
-                await setDoc(doc(db, "jogos", jogoId), {
-                    campeonato, timeA, timeB, data: dataJogo, finalizado: false, resultadoReal: ""
-                });
-                alert("Jogo publicado com sucesso!");
-                carregarJogosParaAposta(); // Atualiza a lista na hora
-            } catch (e) {
-                console.error("Erro ao salvar jogo: ", e);
-            }
+            if (!campeonato || !timeA || !timeB || !dataJogo) return alert("Preencha tudo!");
+            await setDoc(doc(db, "jogos", "jogo_" + Date.now()), {
+                campeonato, timeA, timeB, data: dataJogo, finalizado: false, resultadoReal: ""
+            });
+            alert("Jogo publicado!"); carregarJogosParaAposta();
         };
 
         async function carregarJogosParaAposta() {
             const q = query(collection(db, "jogos"), where("finalizado", "==", false), orderBy("data", "asc"));
             const snap = await getDocs(q);
             const container = document.getElementById('lista-jogos-disponiveis');
-            
-            if (snap.empty) {
-                container.innerHTML = "<p style='text-align:center; opacity:0.7;'>Nenhum jogo disponível para apostas no momento.</p>";
-                return;
-            }
-
-            container.innerHTML = "";
+            container.innerHTML = snap.empty ? "<p>Sem jogos no momento.</p>" : "";
             snap.forEach((jogoDoc) => {
                 const jogo = jogoDoc.data();
                 const id = jogoDoc.id;
-                
-                // Formata a data para ficar bonita
-                const dataFormatada = new Date(jogo.data).toLocaleString('pt-BR', {day: '2-digit', month: '2-digit', hour: '2-digit', minute:'2-digit'});
-
+                const dataF = new Date(jogo.data).toLocaleString('pt-BR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'});
                 container.innerHTML += `
                     <div style="background: var(--card-bg); padding: 20px; border-radius: 15px; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
                         <div style="text-align: center; margin-bottom: 10px;">
-                            <span style="color: var(--accent-color); font-weight: bold; font-size: 0.9rem;">${jogo.campeonato}</span><br>
-                            <small style="opacity: 0.7;">⏰ ${dataFormatada}</small>
+                            <span style="color: var(--accent-color); font-weight: bold;">${jogo.campeonato}</span><br>
+                            <small>⏰ ${dataF}</small>
                         </div>
                         <div style="display: flex; justify-content: space-between; align-items: center; margin: 15px 0;">
-                            <span style="flex:1; text-align:right; font-size: 1.1rem;"><strong>${jogo.timeA}</strong></span>
-                            <input type="number" id="palpite-a-${id}" placeholder="0" style="width: 45px; margin: 0 10px; text-align: center; font-size: 1.2rem; font-weight: bold;">
-                            <span style="font-weight:bold; color: #888;">X</span>
-                            <input type="number" id="palpite-b-${id}" placeholder="0" style="width: 45px; margin: 0 10px; text-align: center; font-size: 1.2rem; font-weight: bold;">
-                            <span style="flex:1; text-align:left; font-size: 1.1rem;"><strong>${jogo.timeB}</strong></span>
+                            <span style="flex:1; text-align:right;"><strong>${jogo.timeA}</strong></span>
+                            <input type="number" id="palpite-a-${id}" placeholder="0" style="width: 45px; margin: 0 10px; text-align: center;">
+                            <span>X</span>
+                            <input type="number" id="palpite-b-${id}" placeholder="0" style="width: 45px; margin: 0 10px; text-align: center;">
+                            <span style="flex:1; text-align:left;"><strong>${jogo.timeB}</strong></span>
                         </div>
-                        <button onclick="salvarPalpiteUsuario('${id}', '${jogo.timeA}', '${jogo.timeB}')" 
-                            style="width: 100%; background: #222; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold; font-family: 'Poppins';">
-                            Confirmar Palpite
-                        </button>
-                    </div>
-                `;
+                        <button onclick="salvarPalpiteUsuario('${id}', '${jogo.timeA}', '${jogo.timeB}')" style="width: 100%; background: #222; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold;">Confirmar Palpite</button>
+                    </div>`;
             });
         }
 
         window.salvarPalpiteUsuario = async (jogoId, timeA, timeB) => {
             const gA = document.getElementById(`palpite-a-${jogoId}`).value;
             const gB = document.getElementById(`palpite-b-${jogoId}`).value;
-
-            if (gA === "" || gB === "") return alert("Digite o placar para os dois times!");
-
+            if (gA === "" || gB === "") return alert("Digite o placar!");
             await setDoc(doc(db, "palpites", `${auth.currentUser.uid}_${jogoId}`), {
                 usuarioId: auth.currentUser.uid,
                 usuarioNome: document.getElementById('display-name').innerText,
-                jogoId: jogoId,
-                confronto: `${timeA} x ${timeB}`,
-                palpite: `${gA}x${gB}`,
-                dataAposta: new Date()
+                jogoId: jogoId, confronto: `${timeA} x ${timeB}`, palpite: `${gA}x${gB}`, dataAposta: new Date()
             });
-            alert("✅ Palpite salvo com sucesso! Boa sorte.");
+            alert("✅ Palpite salvo!");
         };
 
-        // 5. NAVEGAÇÃO E UI
         window.showSection = (section) => {
             document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active-section'));
             document.getElementById('sec-' + section).classList.add('active-section');
@@ -366,17 +326,11 @@
         document.getElementById('btn-login').onclick = () => signInWithPopup(auth, provider);
         document.getElementById('btn-logout').onclick = () => signOut(auth);
         document.getElementById('menu-icon').onclick = () => document.getElementById('sidebar').classList.toggle('active');
-        document.getElementById('btn-theme').onclick = () => {
-            document.body.hasAttribute('data-theme') ? document.body.removeAttribute('data-theme') : document.body.setAttribute('data-theme', 'dark');
-        };
-
+        document.getElementById('btn-theme').onclick = () => document.body.hasAttribute('data-theme') ? document.body.removeAttribute('data-theme') : document.body.setAttribute('data-theme', 'dark');
+        
         window.updateProfileName = async () => {
-            const novoNome = document.getElementById('edit-name').value;
-            if (novoNome) {
-                await updateDoc(doc(db, "usuarios", auth.currentUser.uid), { nome: novoNome });
-                alert("Nome atualizado com sucesso!");
-                location.reload();
-            }
+            const n = document.getElementById('edit-name').value;
+            if (n) { await updateDoc(doc(db, "usuarios", auth.currentUser.uid), { nome: n }); location.reload(); }
         };
     </script>
 </body>
