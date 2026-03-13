@@ -5,19 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>palpitesGB</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;800&display=swap" rel="stylesheet">
-    
     <style>
         :root {
             --bg-color: #ffffff;
             --text-color: #333333;
             --accent-color: #ff0000;
-            --sidebar-bg: rgba(255, 255, 255, 0.9);
+            --sidebar-bg: rgba(255, 255, 255, 0.95);
+            --card-bg: #f9f9f9;
         }
 
         [data-theme="dark"] {
-            --bg-color: #1a1a1a;
+            --bg-color: #121212;
             --text-color: #ffffff;
-            --sidebar-bg: rgba(45, 45, 45, 0.9);
+            --sidebar-bg: rgba(30, 30, 30, 0.95);
+            --card-bg: #1e1e1e;
         }
 
         body {
@@ -25,150 +26,151 @@
             font-family: 'Poppins', sans-serif;
             background-color: var(--bg-color);
             color: var(--text-color);
-            transition: background 0.3s;
-            overflow-x: hidden;
+            transition: 0.3s;
         }
 
-        /* --- TELA DE LOGIN --- */
+        /* TELA DE LOGIN */
         #login-screen {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            background: linear-gradient(135deg, #ff0000 0%, #000 100%);
-            color: white;
-            text-align: center;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            height: 100vh; background: linear-gradient(135deg, #ff0000 0%, #000 100%);
+            color: white; text-align: center;
         }
 
         .btn-google {
-            background: white;
-            color: #444;
-            border: none;
-            padding: 15px 30px;
-            border-radius: 50px;
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            background: white; color: #444; border: none; padding: 15px 30px;
+            border-radius: 50px; cursor: pointer; font-weight: bold;
+            display: flex; align-items: center; gap: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
             transition: 0.2s;
         }
-
         .btn-google:hover { transform: scale(1.05); }
 
-        /* --- DASHBOARD --- */
-        #main-content {
-            display: none; /* Só aparece após o login */
-            height: 100vh;
+        /* SETUP PERFIL */
+        #setup-perfil {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg-color); z-index: 2000; padding: 20px; text-align: center; overflow-y: auto;
         }
 
-        .header-top {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            font-size: 30px;
-            cursor: pointer;
-            z-index: 100;
-            background: var(--bg-color);
-            padding: 5px 10px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        .avatar-option {
+            width: 70px; height: 70px; border-radius: 50%; cursor: pointer;
+            border: 3px solid transparent; transition: 0.2s;
         }
+        .avatar-option.selected { border-color: var(--accent-color); transform: scale(1.1); }
 
-        .welcome-container {
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-        }
-
-        .site-name { font-size: 1.2rem; margin-bottom: 0; opacity: 0.7; }
-        .welcome-text { font-size: 2.8rem; font-weight: 800; margin-top: 0; line-height: 1.2; }
-        .user-name { color: var(--accent-color); }
-
-        /* --- SIDEBAR COM ANIMAÇÃO --- */
+        /* SIDEBAR */
         .sidebar {
-            position: fixed;
-            top: 0;
-            left: -300px;
-            width: 280px;
-            height: 100%;
-            background-color: var(--sidebar-bg);
-            backdrop-filter: blur(12px);
-            transition: all 0.5s cubic-bezier(0.77, 0, 0.175, 1);
-            z-index: 99;
-            padding-top: 80px;
+            position: fixed; top: 0; left: -300px; width: 280px; height: 100%;
+            background-color: var(--sidebar-bg); backdrop-filter: blur(10px);
+            transition: 0.5s cubic-bezier(0.77, 0, 0.175, 1); z-index: 99; padding-top: 80px;
             box-shadow: 5px 0 15px rgba(0,0,0,0.2);
         }
-
         .sidebar.active { left: 0; }
+        .sidebar-item { padding: 15px 30px; cursor: pointer; transition: 0.3s; opacity: 0; transform: translateX(-20px); }
+        .sidebar.active .sidebar-item { opacity: 1; transform: translateX(0); transition-delay: 0.2s; }
+        .sidebar-item:hover { background: rgba(255, 0, 0, 0.1); color: var(--accent-color); }
 
-        .sidebar-item {
-            padding: 15px 30px;
-            font-size: 18px;
-            cursor: pointer;
-            transition: 0.3s;
-            opacity: 0;
-            transform: translateX(-20px);
+        /* DASHBOARD CONTENT */
+        .content-section { display: none; padding: 80px 20px 20px; max-width: 800px; margin: 0 auto; }
+        .active-section { display: block; }
+
+        .header-top { position: fixed; top: 20px; left: 20px; font-size: 30px; cursor: pointer; z-index: 100; }
+        
+        .welcome-text { font-size: 2.5rem; text-align: center; margin-top: 15vh; }
+        .user-name { color: var(--accent-color); }
+
+        .ranking-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .ranking-table tr { border-bottom: 1px solid #ddd; }
+        .ranking-table td { padding: 15px 10px; }
+        
+        input[type="text"], input[type="number"], input[type="datetime-local"] { 
+            padding: 10px; border-radius: 8px; border: 1px solid #ccc; 
+            background: var(--card-bg); color: var(--text-color); font-family: 'Poppins';
         }
-
-        .sidebar.active .sidebar-item {
-            opacity: 1;
-            transform: translateX(0);
-            transition-delay: 0.2s;
-        }
-
-        .sidebar-item:hover { 
-            background: rgba(255, 0, 0, 0.1); 
-            color: var(--accent-color); 
-            padding-left: 40px;
-        }
-
-        .divider { height: 1px; background: #ddd; margin: 15px 30px; }
     </style>
 </head>
 <body>
 
+    <div id="setup-perfil">
+        <h2 style="font-size: 2rem;">Configure seu Perfil</h2>
+        <input type="text" id="setup-nome" placeholder="Seu nome no jogo" maxlength="15" style="width: 80%; max-width: 300px; margin-bottom: 20px;">
+        <p>Escolha seu Avatar:</p>
+        <div id="avatar-grid" style="display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; margin-bottom: 30px; max-width: 500px; margin-left: auto; margin-right: auto;"></div>
+        <button onclick="salvarPerfilInicial()" style="background: var(--accent-color); color: white; border: none; padding: 15px 40px; border-radius: 10px; font-weight: bold; cursor: pointer;">CONCLUIR</button>
+    </div>
+
     <div id="login-screen">
         <h1 style="font-size: 3.5rem; margin-bottom: 0;">palpitesGB</h1>
-        <p style="opacity: 0.9; margin-bottom: 30px;">O bolão oficial entre amigos</p>
+        <p style="margin-bottom: 30px;">O bolão entre amigos</p>
         <button class="btn-google" id="btn-login">
             <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="20">
             Entrar com Google
         </button>
     </div>
 
-    <div id="main-content">
+    <div id="main-content" style="display:none;">
         <div class="header-top" id="menu-icon">☰</div>
 
         <div class="sidebar" id="sidebar">
+            <div class="sidebar-item" onclick="showSection('home')">🏠 Início</div>
+            <div class="sidebar-item" onclick="showSection('ranking')">📊 Ranking</div>
+            <div class="sidebar-item" onclick="showSection('campeonatos')">🏆 Campeonatos</div>
+            <div class="sidebar-item" onclick="showSection('perfil')">👤 Meu Perfil</div>
             <div class="sidebar-item" id="btn-theme">🌓 Mudar Tema</div>
-            <div class="sidebar-item">🔔 Notificações</div>
-            <div class="divider"></div>
-            <div class="sidebar-item">🏆 Campeonatos</div>
-            <div class="sidebar-item">⚽ Últimos Jogos</div>
-            <div class="sidebar-item">👥 Usuários</div>
-            <div class="sidebar-item">👤 Meu Perfil</div>
-            <div class="divider"></div>
-            <div class="sidebar-item" id="btn-logout" style="color: red;">🚪 Sair da Conta</div>
+            <div style="height: 1px; background: #ddd; margin: 15px 30px;"></div>
+            <div class="sidebar-item" id="btn-logout" style="color: red;">🚪 Sair</div>
         </div>
 
-        <div class="welcome-container">
-            <p class="site-name">palpitesGB</p>
-            <h1 class="welcome-text">Seja Bem-Vindo, <br><span class="user-name" id="user-display-name">Carregando...</span></h1>
-        </div>
+        <section id="sec-home" class="content-section active-section">
+            <h1 class="welcome-text">Seja Bem-Vindo, <br><span class="user-name" id="display-name">...</span></h1>
+        </section>
+
+        <section id="sec-ranking" class="content-section">
+            <h2>🏆 Top 50 Ranking</h2>
+            <div id="ranking-list">Carregando ranking...</div>
+        </section>
+
+        <section id="sec-campeonatos" class="content-section">
+            <h2>🏆 Campeonatos e Jogos</h2>
+            
+            <div id="admin-panel" style="display:none; background: rgba(255, 215, 0, 0.1); padding: 20px; border-radius: 15px; border: 2px dashed gold; margin-bottom: 30px;">
+                <h3 style="margin-top:0">🛠️ Painel do Admin</h3>
+                <div style="display: grid; gap: 10px;">
+                    <input type="text" id="adm-camp-nome" placeholder="Nome do Campeonato (Ex: Brasileirão)">
+                    <div style="display: flex; gap: 5px;">
+                        <input type="text" id="adm-time-a" placeholder="Time Casa" style="flex:1">
+                        <input type="text" id="adm-time-b" placeholder="Time Fora" style="flex:1">
+                    </div>
+                    <input type="datetime-local" id="adm-jogo-data">
+                    <button onclick="adicionarJogoBD()" style="background: #28a745; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer;">
+                        🚀 PUBLICAR JOGO PARA APOSTAS
+                    </button>
+                </div>
+            </div>
+
+            <div id="lista-jogos-disponiveis">
+                <p>Carregando jogos disponíveis...</p>
+            </div>
+        </section>
+
+        <section id="sec-perfil" class="content-section">
+            <h2>👤 Meu Perfil</h2>
+            <div id="perfil-info" style="text-align: center;">
+                <img id="my-avatar" src="" style="width: 100px; border-radius: 50%; margin-bottom: 15px;">
+                <h3 id="my-name" style="margin: 0;"></h3>
+                <p>Pontos acumulados: <strong id="my-points" style="color: var(--accent-color); font-size: 1.2rem;">0</strong></p>
+                <div style="margin-top: 30px; display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                    <input type="text" id="edit-name" placeholder="Novo nome de exibição" style="width: 80%; max-width: 300px;">
+                    <button onclick="updateProfileName()" style="background: #444; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer;">Alterar Nome</button>
+                </div>
+            </div>
+        </section>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, query, where, getDocs, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // SUA CONFIGURAÇÃO QUE VOCÊ POSTOU
+        // COLE AQUI AS SUAS CHAVES DO FIREBASE
         const firebaseConfig = {
             apiKey: "AIzaSyBmUFO1e0s1_jxb2cv4yP8BgKGCcTXr3r0",
             authDomain: "palpitesgb.firebaseapp.com",
@@ -182,55 +184,200 @@
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth();
+        const db = getFirestore(app);
         const provider = new GoogleAuthProvider();
 
-        // ELEMENTOS DA TELA
-        const btnLogin = document.getElementById('btn-login');
-        const btnLogout = document.getElementById('btn-logout');
-        const loginScreen = document.getElementById('login-screen');
-        const mainContent = document.getElementById('main-content');
-        const userNameDisplay = document.getElementById('user-display-name');
-        const sidebar = document.getElementById('sidebar');
-        const menuIcon = document.getElementById('menu-icon');
-        const btnTheme = document.getElementById('btn-theme');
+        const avataresPredefinidos = [
+            "https://cdn-icons-png.flaticon.com/512/1165/1165248.png", "https://cdn-icons-png.flaticon.com/512/3571/3571020.png",
+            "https://cdn-icons-png.flaticon.com/512/824/824231.png", "https://cdn-icons-png.flaticon.com/512/3306/3306613.png",
+            "https://cdn-icons-png.flaticon.com/512/2614/2614603.png", "https://cdn-icons-png.flaticon.com/512/3099/3099380.png",
+            "https://cdn-icons-png.flaticon.com/512/9131/9131529.png", "https://cdn-icons-png.flaticon.com/512/1041/1041168.png",
+            "https://cdn-icons-png.flaticon.com/512/1152/1152912.png", "https://cdn-icons-png.flaticon.com/512/3993/3993202.png"
+        ];
+        let avatarEscolha = "";
 
-        // FUNÇÃO LOGIN
-        btnLogin.addEventListener('click', () => {
-            signInWithPopup(auth, provider).catch(error => alert("Erro: " + error.message));
-        });
-
-        // FUNÇÃO SAIR
-        btnLogout.addEventListener('click', () => {
-            signOut(auth).then(() => location.reload());
-        });
-
-        // VERIFICAR ESTADO DO USUÁRIO
-        onAuthStateChanged(auth, (user) => {
+        // 1. AUTENTICAÇÃO E SETUP
+        onAuthStateChanged(auth, async (user) => {
             if (user) {
-                userNameDisplay.innerText = user.displayName;
-                loginScreen.style.display = 'none';
-                mainContent.style.display = 'block';
+                const userDoc = await getDoc(doc(db, "usuarios", user.uid));
+                if (!userDoc.exists()) {
+                    showSetup();
+                } else {
+                    const data = userDoc.data();
+                    if (data.status === "pendente" && user.email !== "souldketchup@gmail.com") {
+                        alert("Aguardando autorização do dono do site...");
+                        signOut(auth);
+                        return;
+                    }
+                    loadUserDashboard(data);
+                }
             } else {
-                loginScreen.style.display = 'flex';
-                mainContent.style.display = 'none';
+                document.getElementById('login-screen').style.display = 'flex';
+                document.getElementById('main-content').style.display = 'none';
             }
         });
 
-        // INTERAÇÕES INTERFACE
-        menuIcon.addEventListener('click', () => sidebar.classList.toggle('active'));
-        
-        btnTheme.addEventListener('click', () => {
-            document.body.hasAttribute('data-theme') ? 
-            document.body.removeAttribute('data-theme') : 
-            document.body.setAttribute('data-theme', 'dark');
-        });
+        function showSetup() {
+            document.getElementById('setup-perfil').style.display = 'block';
+            const grid = document.getElementById('avatar-grid');
+            grid.innerHTML = "";
+            avataresPredefinidos.forEach(url => {
+                const img = document.createElement('img');
+                img.src = url; img.className = 'avatar-option';
+                img.onclick = () => {
+                    document.querySelectorAll('.avatar-option').forEach(i => i.classList.remove('selected'));
+                    img.classList.add('selected');
+                    avatarEscolha = url;
+                };
+                grid.appendChild(img);
+            });
+        }
 
-        // Fechar menu ao clicar fora
-        document.addEventListener('click', (e) => {
-            if (!sidebar.contains(e.target) && e.target !== menuIcon && sidebar.classList.contains('active')) {
-                sidebar.classList.remove('active');
+        window.salvarPerfilInicial = async () => {
+            const nome = document.getElementById('setup-nome').value;
+            if (!nome || !avatarEscolha) return alert("Preencha o nome e escolha um avatar!");
+            
+            const isAdmin = auth.currentUser.email === "souldketchup@gmail.com";
+            await setDoc(doc(db, "usuarios", auth.currentUser.uid), {
+                nome: nome, avatar: avatarEscolha, pontos: 0,
+                email: auth.currentUser.email, isAdmin: isAdmin,
+                status: isAdmin ? "aprovado" : "pendente"
+            });
+            location.reload();
+        };
+
+        // 2. CARREGAR DASHBOARD
+        function loadUserDashboard(data) {
+            document.getElementById('setup-perfil').style.display = 'none';
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('main-content').style.display = 'block';
+            
+            document.getElementById('display-name').innerText = data.nome;
+            document.getElementById('my-name').innerText = data.nome;
+            document.getElementById('my-avatar').src = data.avatar;
+            document.getElementById('my-points').innerText = data.pontos;
+            
+            if (data.isAdmin) document.getElementById('admin-panel').style.display = 'block';
+            
+            loadRanking();
+            carregarJogosParaAposta();
+        }
+
+        // 3. LÓGICA DO RANKING
+        async function loadRanking() {
+            const q = query(collection(db, "usuarios"), where("pontos", ">", 0), orderBy("pontos", "desc"), limit(50));
+            const snap = await getDocs(q);
+            let html = '<table class="ranking-table">';
+            let count = 1;
+            snap.forEach(d => {
+                const u = d.data();
+                html += `<tr><td><strong>${count}º</strong></td><td><img src="${u.avatar}" width="35" style="border-radius:50%"></td><td>${u.nome}</td><td style="color:var(--accent-color); font-weight:bold;">${u.pontos} pts</td></tr>`;
+                count++;
+            });
+            html += '</table>';
+            document.getElementById('ranking-list').innerHTML = snap.empty ? "Nenhum ponto marcado ainda. Faça suas apostas!" : html;
+        }
+
+        // 4. LÓGICA DE JOGOS E APOSTAS (ADMIN E USUÁRIOS)
+        window.adicionarJogoBD = async () => {
+            const campeonato = document.getElementById('adm-camp-nome').value;
+            const timeA = document.getElementById('adm-time-a').value;
+            const timeB = document.getElementById('adm-time-b').value;
+            const dataJogo = document.getElementById('adm-jogo-data').value;
+
+            if (!campeonato || !timeA || !timeB || !dataJogo) return alert("Preencha todos os campos do jogo!");
+
+            try {
+                const jogoId = "jogo_" + Date.now();
+                await setDoc(doc(db, "jogos", jogoId), {
+                    campeonato, timeA, timeB, data: dataJogo, finalizado: false, resultadoReal: ""
+                });
+                alert("Jogo publicado com sucesso!");
+                carregarJogosParaAposta(); // Atualiza a lista na hora
+            } catch (e) {
+                console.error("Erro ao salvar jogo: ", e);
             }
-        });
+        };
+
+        async function carregarJogosParaAposta() {
+            const q = query(collection(db, "jogos"), where("finalizado", "==", false), orderBy("data", "asc"));
+            const snap = await getDocs(q);
+            const container = document.getElementById('lista-jogos-disponiveis');
+            
+            if (snap.empty) {
+                container.innerHTML = "<p style='text-align:center; opacity:0.7;'>Nenhum jogo disponível para apostas no momento.</p>";
+                return;
+            }
+
+            container.innerHTML = "";
+            snap.forEach((jogoDoc) => {
+                const jogo = jogoDoc.data();
+                const id = jogoDoc.id;
+                
+                // Formata a data para ficar bonita
+                const dataFormatada = new Date(jogo.data).toLocaleString('pt-BR', {day: '2-digit', month: '2-digit', hour: '2-digit', minute:'2-digit'});
+
+                container.innerHTML += `
+                    <div style="background: var(--card-bg); padding: 20px; border-radius: 15px; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+                        <div style="text-align: center; margin-bottom: 10px;">
+                            <span style="color: var(--accent-color); font-weight: bold; font-size: 0.9rem;">${jogo.campeonato}</span><br>
+                            <small style="opacity: 0.7;">⏰ ${dataFormatada}</small>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin: 15px 0;">
+                            <span style="flex:1; text-align:right; font-size: 1.1rem;"><strong>${jogo.timeA}</strong></span>
+                            <input type="number" id="palpite-a-${id}" placeholder="0" style="width: 45px; margin: 0 10px; text-align: center; font-size: 1.2rem; font-weight: bold;">
+                            <span style="font-weight:bold; color: #888;">X</span>
+                            <input type="number" id="palpite-b-${id}" placeholder="0" style="width: 45px; margin: 0 10px; text-align: center; font-size: 1.2rem; font-weight: bold;">
+                            <span style="flex:1; text-align:left; font-size: 1.1rem;"><strong>${jogo.timeB}</strong></span>
+                        </div>
+                        <button onclick="salvarPalpiteUsuario('${id}', '${jogo.timeA}', '${jogo.timeB}')" 
+                            style="width: 100%; background: #222; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold; font-family: 'Poppins';">
+                            Confirmar Palpite
+                        </button>
+                    </div>
+                `;
+            });
+        }
+
+        window.salvarPalpiteUsuario = async (jogoId, timeA, timeB) => {
+            const gA = document.getElementById(`palpite-a-${jogoId}`).value;
+            const gB = document.getElementById(`palpite-b-${jogoId}`).value;
+
+            if (gA === "" || gB === "") return alert("Digite o placar para os dois times!");
+
+            await setDoc(doc(db, "palpites", `${auth.currentUser.uid}_${jogoId}`), {
+                usuarioId: auth.currentUser.uid,
+                usuarioNome: document.getElementById('display-name').innerText,
+                jogoId: jogoId,
+                confronto: `${timeA} x ${timeB}`,
+                palpite: `${gA}x${gB}`,
+                dataAposta: new Date()
+            });
+            alert("✅ Palpite salvo com sucesso! Boa sorte.");
+        };
+
+        // 5. NAVEGAÇÃO E UI
+        window.showSection = (section) => {
+            document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active-section'));
+            document.getElementById('sec-' + section).classList.add('active-section');
+            document.getElementById('sidebar').classList.remove('active');
+        };
+
+        document.getElementById('btn-login').onclick = () => signInWithPopup(auth, provider);
+        document.getElementById('btn-logout').onclick = () => signOut(auth);
+        document.getElementById('menu-icon').onclick = () => document.getElementById('sidebar').classList.toggle('active');
+        document.getElementById('btn-theme').onclick = () => {
+            document.body.hasAttribute('data-theme') ? document.body.removeAttribute('data-theme') : document.body.setAttribute('data-theme', 'dark');
+        };
+
+        window.updateProfileName = async () => {
+            const novoNome = document.getElementById('edit-name').value;
+            if (novoNome) {
+                await updateDoc(doc(db, "usuarios", auth.currentUser.uid), { nome: novoNome });
+                alert("Nome atualizado com sucesso!");
+                location.reload();
+            }
+        };
     </script>
 </body>
 </html>
