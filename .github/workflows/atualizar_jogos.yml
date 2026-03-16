@@ -1,1 +1,29 @@
+name: Atualizar Jogos Diariamente
 
+on:
+  schedule:
+    # Roda todos os dias às 08:00 (horário de Brasília)
+    - cron: '0 11 * * *' 
+  workflow_dispatch: # Permite que você clique em um botão e rode na hora para testar
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v3
+
+      - name: Configurar Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Instalar dependências
+        run: |
+          pip install requests beautifulsoup4 firebase-admin
+
+      - name: Rodar o Robô
+        env:
+          # Aqui ele pega a chave secreta que você vai cadastrar no GitHub
+          FIREBASE_KEY_JSON: ${{ secrets.FIREBASE_KEY }}
+        run: python bot_jogos.py
