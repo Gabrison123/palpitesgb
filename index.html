@@ -4,21 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>palpitesGB</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg-color: #ffffff;
             --text-color: #333333;
-            --accent-color: #ff0000;
-            --sidebar-bg: rgba(255, 255, 255, 0.95);
-            --card-bg: #f9f9f9;
+            --primary-grad: linear-gradient(135deg, #7928ca 0%, #ff0080 100%);
+            --accent-color: #ff0080;
+            --card-bg: #ffffff;
+            --sidebar-bg: rgba(255, 255, 255, 0.9);
         }
 
         [data-theme="dark"] {
-            --bg-color: #121212;
+            --bg-color: #0f0f0f;
             --text-color: #ffffff;
-            --sidebar-bg: rgba(30, 30, 30, 0.95);
-            --card-bg: #1e1e1e;
+            --card-bg: #1a1a1a;
+            --sidebar-bg: rgba(20, 20, 20, 0.95);
         }
 
         body {
@@ -26,141 +27,210 @@
             font-family: 'Poppins', sans-serif;
             background-color: var(--bg-color);
             color: var(--text-color);
+            overflow-x: hidden;
             transition: 0.3s;
+            min-height: 100vh;
         }
 
-        /* TELA DE LOGIN */
+        /* --- FORMAS ABSTRATAS (ESTILO FULLY COLORED) --- */
+        .bg-decoration {
+            position: fixed;
+            bottom: -10%;
+            left: -5%;
+            width: 600px;
+            height: 600px;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .shape {
+            position: absolute;
+            border-radius: 100px;
+            transform: rotate(-45deg);
+            background: var(--primary-grad);
+            opacity: 0.8;
+        }
+
+        .shape-1 { width: 80px; height: 400px; bottom: 0; left: 0; background: #7928ca; }
+        .shape-2 { width: 80px; height: 500px; bottom: -50px; left: 100px; background: #ff0080; }
+        .shape-3 { width: 80px; height: 350px; bottom: 20px; left: 200px; background: #ff4d4d; }
+
+        /* --- TELA DE LOGIN --- */
         #login-screen {
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            height: 100vh; background: linear-gradient(135deg, #ff0000 0%, #000 100%);
-            color: white; text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            justify-content: center;
+            height: 100vh;
+            padding-left: 10%;
+        }
+
+        .hero-title {
+            font-size: 5rem;
+            font-weight: 800;
+            margin: 0;
+            line-height: 1;
+            background: var(--primary-grad);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-subtitle {
+            font-size: 1.5rem;
+            margin: 10px 0 40px;
+            opacity: 0.8;
         }
 
         .btn-google {
-            background: white; color: #444; border: none; padding: 15px 30px;
-            border-radius: 50px; cursor: pointer; font-weight: bold;
-            display: flex; align-items: center; gap: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-            transition: 0.2s;
+            background: var(--primary-grad);
+            color: white;
+            border: none;
+            padding: 15px 35px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 10px 20px rgba(255, 0, 128, 0.3);
+            transition: 0.3s;
         }
-        .btn-google:hover { transform: scale(1.05); }
 
-        /* SETUP PERFIL */
+        .btn-google:hover { transform: translateY(-3px); box-shadow: 0 15px 25px rgba(255, 0, 128, 0.4); }
+
+        /* --- SETUP PERFIL --- */
         #setup-perfil {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--bg-color); z-index: 2000; padding: 20px; text-align: center; overflow-y: auto;
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg-color);
+            z-index: 3000;
+            padding: 40px;
+            text-align: center;
         }
 
         .avatar-option {
-            width: 70px; height: 70px; border-radius: 50%; cursor: pointer;
-            border: 3px solid transparent; transition: 0.2s;
+            width: 80px; height: 80px; border-radius: 50%; cursor: pointer;
+            border: 4px solid transparent; transition: 0.3s;
         }
         .avatar-option.selected { border-color: var(--accent-color); transform: scale(1.1); }
 
-        /* SIDEBAR */
+        /* --- DASHBOARD --- */
+        .header-top { position: fixed; top: 30px; right: 40px; font-size: 35px; cursor: pointer; z-index: 100; }
+        
         .sidebar {
-            position: fixed; top: 0; left: -300px; width: 280px; height: 100%;
-            background-color: var(--sidebar-bg); backdrop-filter: blur(10px);
-            transition: 0.5s cubic-bezier(0.77, 0, 0.175, 1); z-index: 99; padding-top: 80px;
-            box-shadow: 5px 0 15px rgba(0,0,0,0.2);
+            position: fixed; top: 0; right: -320px; width: 300px; height: 100%;
+            background: var(--sidebar-bg); backdrop-filter: blur(15px);
+            transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 99; padding-top: 100px;
+            box-shadow: -10px 0 30px rgba(0,0,0,0.1);
         }
-        .sidebar.active { left: 0; }
-        .sidebar-item { padding: 15px 30px; cursor: pointer; transition: 0.3s; opacity: 0; transform: translateX(-20px); }
-        .sidebar.active .sidebar-item { opacity: 1; transform: translateX(0); transition-delay: 0.2s; }
-        .sidebar-item:hover { background: rgba(255, 0, 0, 0.1); color: var(--accent-color); }
+        .sidebar.active { right: 0; }
+        .sidebar-item { padding: 20px 40px; cursor: pointer; font-weight: 600; transition: 0.3s; }
+        .sidebar-item:hover { color: var(--accent-color); padding-left: 50px; }
 
-        /* DASHBOARD CONTENT */
-        .content-section { display: none; padding: 80px 20px 20px; max-width: 800px; margin: 0 auto; }
+        .content-section { display: none; padding: 120px 5% 50px; max-width: 1000px; }
         .active-section { display: block; }
 
-        .header-top { position: fixed; top: 20px; left: 20px; font-size: 30px; cursor: pointer; z-index: 100; }
-        
-        .welcome-text { font-size: 2.5rem; text-align: center; margin-top: 15vh; }
-        .user-name { color: var(--accent-color); }
-
-        .ranking-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        .ranking-table tr { border-bottom: 1px solid #ddd; }
-        .ranking-table td { padding: 15px 10px; }
-        
-        input[type="text"], input[type="number"], input[type="datetime-local"] { 
-            padding: 10px; border-radius: 8px; border: 1px solid #ccc; 
-            background: var(--card-bg); color: var(--text-color); font-family: 'Poppins';
+        .card {
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            margin-bottom: 25px;
         }
+
+        input {
+            border: 2px solid #eee;
+            padding: 12px;
+            border-radius: 12px;
+            outline: none;
+            transition: 0.3s;
+        }
+        input:focus { border-color: var(--accent-color); }
+
+        button.primary {
+            background: var(--primary-grad);
+            color: white; border: none; padding: 12px 25px;
+            border-radius: 12px; cursor: pointer; font-weight: 600;
+        }
+
     </style>
 </head>
 <body>
 
-    <div id="setup-perfil">
-        <h2 style="font-size: 2rem;">Configure seu Perfil</h2>
-        <input type="text" id="setup-nome" placeholder="Seu nome no jogo" maxlength="15" style="width: 80%; max-width: 300px; margin-bottom: 20px;">
-        <p>Escolha seu Avatar:</p>
-        <div id="avatar-grid" style="display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; margin-bottom: 30px; max-width: 500px; margin-left: auto; margin-right: auto;"></div>
-        <button onclick="salvarPerfilInicial()" style="background: var(--accent-color); color: white; border: none; padding: 15px 40px; border-radius: 10px; font-weight: bold; cursor: pointer;">CONCLUIR</button>
+    <div class="bg-decoration">
+        <div class="shape shape-1"></div>
+        <div class="shape shape-2"></div>
+        <div class="shape shape-3"></div>
     </div>
 
     <div id="login-screen">
-        <h1 style="font-size: 3.5rem; margin-bottom: 0;">palpitesGB</h1>
-        <p style="margin-bottom: 30px;">O bolão entre amigos</p>
+        <h1 class="hero-title">palpitesGB</h1>
+        <p class="hero-subtitle">bolão de apostas</p>
         <button class="btn-google" id="btn-login">
             <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="20">
             Entrar com Google
         </button>
     </div>
 
+    <div id="setup-perfil">
+        <h2>Crie sua Identidade</h2>
+        <input type="text" id="setup-nome" placeholder="Seu nome" maxlength="15" style="width: 300px; margin-bottom: 30px;">
+        <div id="avatar-grid" style="display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; margin-bottom: 40px;"></div>
+        <button class="primary" onclick="salvarPerfilInicial()">COMEÇAR JOGO</button>
+    </div>
+
     <div id="main-content" style="display:none;">
         <div class="header-top" id="menu-icon">☰</div>
 
-        <div class="sidebar" id="sidebar">
-            <div class="sidebar-item" onclick="showSection('home')">🏠 Início</div>
-            <div class="sidebar-item" onclick="showSection('ranking')">📊 Ranking</div>
-            <div class="sidebar-item" onclick="showSection('campeonatos')">🏆 Campeonatos</div>
-            <div class="sidebar-item" onclick="showSection('perfil')">👤 Meu Perfil</div>
-            <div class="sidebar-item" id="btn-theme">🌓 Mudar Tema</div>
-            <div style="height: 1px; background: #ddd; margin: 15px 30px;"></div>
-            <div class="sidebar-item" id="btn-logout" style="color: red;">🚪 Sair</div>
-        </div>
+        <nav class="sidebar" id="sidebar">
+            <div class="sidebar-item" onclick="showSection('home')">Início</div>
+            <div class="sidebar-item" onclick="showSection('ranking')">Ranking</div>
+            <div class="sidebar-item" onclick="showSection('campeonatos')">Campeonatos</div>
+            <div class="sidebar-item" onclick="showSection('perfil')">Meu Perfil</div>
+            <div class="sidebar-item" id="btn-theme">Modo Noturno</div>
+            <div class="sidebar-item" id="btn-logout" style="color: #ff4d4d;">Sair</div>
+        </nav>
 
         <section id="sec-home" class="content-section active-section">
-            <h1 class="welcome-text">Seja Bem-Vindo, <br><span class="user-name" id="display-name">...</span></h1>
+            <h1 style="font-size: 3.5rem;">Olá, <span id="display-name" class="hero-title" style="font-size: inherit;">...</span></h1>
+            <p>Seus palpites estão esperando. Vamos ganhar alguns pontos hoje?</p>
+            <button class="primary" onclick="showSection('campeonatos')" style="margin-top: 20px;">VER JOGOS DO DIA</button>
         </section>
 
         <section id="sec-ranking" class="content-section">
-            <h2>🏆 Top 50 Ranking</h2>
-            <div id="ranking-list">Carregando ranking...</div>
+            <h2 class="hero-title" style="font-size: 2.5rem;">Global Ranking</h2>
+            <div id="ranking-list" class="card">Carregando mestre dos palpites...</div>
         </section>
 
         <section id="sec-campeonatos" class="content-section">
-            <h2>🏆 Campeonatos e Jogos</h2>
+            <h2 class="hero-title" style="font-size: 2.5rem;">Jogos Ativos</h2>
             
-            <div id="admin-panel" style="display:none; background: rgba(255, 215, 0, 0.1); padding: 20px; border-radius: 15px; border: 2px dashed gold; margin-bottom: 30px;">
-                <h3 style="margin-top:0">🛠️ Painel do Admin</h3>
-                <div style="display: grid; gap: 10px;">
-                    <input type="text" id="adm-camp-nome" placeholder="Nome do Campeonato (Ex: Brasileirão)">
-                    <div style="display: flex; gap: 5px;">
+            <div id="admin-panel" style="display:none;" class="card">
+                <h3 style="color: var(--accent-color)">🛠 Painel Admin</h3>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <input type="text" id="adm-camp-nome" placeholder="Campeonato">
+                    <div style="display: flex; gap: 10px;">
                         <input type="text" id="adm-time-a" placeholder="Time Casa" style="flex:1">
                         <input type="text" id="adm-time-b" placeholder="Time Fora" style="flex:1">
                     </div>
                     <input type="datetime-local" id="adm-jogo-data">
-                    <button onclick="adicionarJogoBD()" style="background: #28a745; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer;">
-                        🚀 PUBLICAR JOGO PARA APOSTAS
-                    </button>
+                    <button class="primary" onclick="adicionarJogoBD()">PUBLICAR PARTIDA</button>
                 </div>
             </div>
 
-            <div id="lista-jogos-disponiveis">
-                <p>Carregando jogos disponíveis...</p>
-            </div>
+            <div id="lista-jogos-disponiveis"></div>
         </section>
 
         <section id="sec-perfil" class="content-section">
-            <h2>👤 Meu Perfil</h2>
-            <div id="perfil-info" style="text-align: center;">
-                <img id="my-avatar" src="" style="width: 100px; border-radius: 50%; margin-bottom: 15px;">
-                <h3 id="my-name" style="margin: 0;"></h3>
-                <p>Pontos acumulados: <strong id="my-points" style="color: var(--accent-color); font-size: 1.2rem;">0</strong></p>
-                <div style="margin-top: 30px; display: flex; flex-direction: column; align-items: center; gap: 10px;">
-                    <input type="text" id="edit-name" placeholder="Novo nome de exibição" style="width: 80%; max-width: 300px;">
-                    <button onclick="updateProfileName()" style="background: #444; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer;">Alterar Nome</button>
-                </div>
+            <h2 class="hero-title" style="font-size: 2.5rem;">Meu Perfil</h2>
+            <div class="card" style="text-align: center;">
+                <img id="my-avatar" src="" style="width: 120px; border-radius: 50%; border: 5px solid var(--accent-color);">
+                <h3 id="my-name"></h3>
+                <p>Pontuação Total: <strong id="my-points" style="font-size: 1.5rem; color: var(--accent-color);">0</strong></p>
+                <input type="text" id="edit-name" placeholder="Mudar nome" style="margin-top: 20px;">
+                <button class="primary" onclick="updateProfileName()" style="margin-left: 10px;">Atualizar</button>
             </div>
         </section>
     </div>
@@ -170,6 +240,7 @@
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, query, where, getDocs, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+        // CONFIGURAÇÃO DO FIREBASE (MANTIDA)
         const firebaseConfig = {
             apiKey: "AIzaSyBmUFO1e0s1_jxb2cv4yP8BgKGCcTXr3r0",
             authDomain: "palpitesgb.firebaseapp.com",
@@ -184,23 +255,16 @@
         const db = getFirestore(app);
         const provider = new GoogleAuthProvider();
 
-        const avataresPredefinidos = [
-            "https://cdn-icons-png.flaticon.com/512/1165/1165248.png", "https://cdn-icons-png.flaticon.com/512/3571/3571020.png",
-            "https://cdn-icons-png.flaticon.com/512/824/824231.png", "https://cdn-icons-png.flaticon.com/512/3306/3306613.png",
-            "https://cdn-icons-png.flaticon.com/512/2614/2614603.png", "https://cdn-icons-png.flaticon.com/512/3099/3099380.png",
-            "https://cdn-icons-png.flaticon.com/512/9131/9131529.png", "https://cdn-icons-png.flaticon.com/512/1041/1041168.png",
-            "https://cdn-icons-png.flaticon.com/512/1152/1152912.png", "https://cdn-icons-png.flaticon.com/512/3993/3993202.png"
+        const avatares = [
+            "https://cdn-icons-png.flaticon.com/512/4140/4140037.png", "https://cdn-icons-png.flaticon.com/512/4140/4140047.png",
+            "https://cdn-icons-png.flaticon.com/512/4140/4140048.png", "https://cdn-icons-png.flaticon.com/512/4140/4140051.png"
         ];
         let avatarEscolha = "";
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 const userDoc = await getDoc(doc(db, "usuarios", user.uid));
-                if (!userDoc.exists()) {
-                    showSetup();
-                } else {
-                    loadUserDashboard(userDoc.data());
-                }
+                userDoc.exists() ? loadUserDashboard(userDoc.data()) : showSetup();
             } else {
                 document.getElementById('login-screen').style.display = 'flex';
                 document.getElementById('main-content').style.display = 'none';
@@ -210,14 +274,12 @@
         function showSetup() {
             document.getElementById('setup-perfil').style.display = 'block';
             const grid = document.getElementById('avatar-grid');
-            grid.innerHTML = "";
-            avataresPredefinidos.forEach(url => {
+            avatares.forEach(url => {
                 const img = document.createElement('img');
                 img.src = url; img.className = 'avatar-option';
                 img.onclick = () => {
                     document.querySelectorAll('.avatar-option').forEach(i => i.classList.remove('selected'));
-                    img.classList.add('selected');
-                    avatarEscolha = url;
+                    img.classList.add('selected'); avatarEscolha = url;
                 };
                 grid.appendChild(img);
             });
@@ -225,13 +287,10 @@
 
         window.salvarPerfilInicial = async () => {
             const nome = document.getElementById('setup-nome').value;
-            if (!nome || !avatarEscolha) return alert("Preencha o nome e escolha um avatar!");
-            
+            if (!nome || !avatarEscolha) return alert("Nome e Avatar são obrigatórios!");
             const isAdmin = auth.currentUser.email === "souldketchup@gmail.com";
             await setDoc(doc(db, "usuarios", auth.currentUser.uid), {
-                nome: nome, avatar: avatarEscolha, pontos: 0,
-                email: auth.currentUser.email, isAdmin: isAdmin,
-                status: "aprovado" // <-- QUALQUER UM ENTRA DIRETO AGORA
+                nome, avatar: avatarEscolha, pontos: 0, email: auth.currentUser.email, isAdmin, status: "aprovado"
             });
             location.reload();
         };
@@ -240,86 +299,65 @@
             document.getElementById('setup-perfil').style.display = 'none';
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('main-content').style.display = 'block';
-            
             document.getElementById('display-name').innerText = data.nome;
             document.getElementById('my-name').innerText = data.nome;
             document.getElementById('my-avatar').src = data.avatar;
             document.getElementById('my-points').innerText = data.pontos;
-            
             if (data.isAdmin) document.getElementById('admin-panel').style.display = 'block';
-            
-            loadRanking();
-            carregarJogosParaAposta();
+            loadRanking(); carregarJogosParaAposta();
         }
 
         async function loadRanking() {
-            const q = query(collection(db, "usuarios"), where("pontos", ">", 0), orderBy("pontos", "desc"), limit(50));
+            const q = query(collection(db, "usuarios"), orderBy("pontos", "desc"), limit(10));
             const snap = await getDocs(q);
-            let html = '<table class="ranking-table">';
-            let count = 1;
-            snap.forEach(d => {
+            let html = '<table style="width:100%">';
+            snap.forEach((d, i) => {
                 const u = d.data();
-                html += `<tr><td><strong>${count}º</strong></td><td><img src="${u.avatar}" width="35" style="border-radius:50%"></td><td>${u.nome}</td><td style="color:var(--accent-color); font-weight:bold;">${u.pontos} pts</td></tr>`;
-                count++;
+                html += `<tr style="border-bottom: 1px solid #eee"><td>${i+1}º</td><td><img src="${u.avatar}" width="30"></td><td>${u.nome}</td><td style="text-align:right; font-weight:bold">${u.pontos}</td></tr>`;
             });
-            html += '</table>';
-            document.getElementById('ranking-list').innerHTML = snap.empty ? "Nenhum ponto marcado ainda." : html;
+            document.getElementById('ranking-list').innerHTML = html + "</table>";
         }
 
         window.adicionarJogoBD = async () => {
-            const campeonato = document.getElementById('adm-camp-nome').value;
-            const timeA = document.getElementById('adm-time-a').value;
-            const timeB = document.getElementById('adm-time-b').value;
-            const dataJogo = document.getElementById('adm-jogo-data').value;
-            if (!campeonato || !timeA || !timeB || !dataJogo) return alert("Preencha tudo!");
-            await setDoc(doc(db, "jogos", "jogo_" + Date.now()), {
-                campeonato, timeA, timeB, data: dataJogo, finalizado: false, resultadoReal: ""
-            });
-            alert("Jogo publicado!"); carregarJogosParaAposta();
+            const camp = document.getElementById('adm-camp-nome').value;
+            const tA = document.getElementById('adm-time-a').value;
+            const tB = document.getElementById('adm-time-b').value;
+            const data = document.getElementById('adm-jogo-data').value;
+            await setDoc(doc(db, "jogos", "jogo_" + Date.now()), { campeonato: camp, timeA: tA, timeB: tB, data, finalizado: false });
+            alert("Jogo no ar!"); carregarJogosParaAposta();
         };
 
         async function carregarJogosParaAposta() {
-            const q = query(collection(db, "jogos"), where("finalizado", "==", false), orderBy("data", "asc"));
+            const q = query(collection(db, "jogos"), where("finalizado", "==", false));
             const snap = await getDocs(q);
             const container = document.getElementById('lista-jogos-disponiveis');
-            container.innerHTML = snap.empty ? "<p>Sem jogos no momento.</p>" : "";
-            snap.forEach((jogoDoc) => {
-                const jogo = jogoDoc.data();
-                const id = jogoDoc.id;
-                const dataF = new Date(jogo.data).toLocaleString('pt-BR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'});
+            container.innerHTML = "";
+            snap.forEach(doc => {
+                const j = doc.data();
                 container.innerHTML += `
-                    <div style="background: var(--card-bg); padding: 20px; border-radius: 15px; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
-                        <div style="text-align: center; margin-bottom: 10px;">
-                            <span style="color: var(--accent-color); font-weight: bold;">${jogo.campeonato}</span><br>
-                            <small>⏰ ${dataF}</small>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin: 15px 0;">
-                            <span style="flex:1; text-align:right;"><strong>${jogo.timeA}</strong></span>
-                            <input type="number" id="palpite-a-${id}" placeholder="0" style="width: 45px; margin: 0 10px; text-align: center;">
-                            <span>X</span>
-                            <input type="number" id="palpite-b-${id}" placeholder="0" style="width: 45px; margin: 0 10px; text-align: center;">
-                            <span style="flex:1; text-align:left;"><strong>${jogo.timeB}</strong></span>
-                        </div>
-                        <button onclick="salvarPalpiteUsuario('${id}', '${jogo.timeA}', '${jogo.timeB}')" style="width: 100%; background: #222; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold;">Confirmar Palpite</button>
+                    <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
+                        <div style="flex:1; text-align:center"><strong>${j.timeA}</strong></div>
+                        <input type="number" id="pA-${doc.id}" style="width:40px">
+                        <div style="padding: 0 10px">X</div>
+                        <input type="number" id="pB-${doc.id}" style="width:40px">
+                        <div style="flex:1; text-align:center"><strong>${j.timeB}</strong></div>
+                        <button class="primary" onclick="salvarPalpite('${doc.id}', '${j.timeA}', '${j.timeB}')" style="margin-left:15px">Apostar</button>
                     </div>`;
             });
         }
 
-        window.salvarPalpiteUsuario = async (jogoId, timeA, timeB) => {
-            const gA = document.getElementById(`palpite-a-${jogoId}`).value;
-            const gB = document.getElementById(`palpite-b-${jogoId}`).value;
-            if (gA === "" || gB === "") return alert("Digite o placar!");
-            await setDoc(doc(db, "palpites", `${auth.currentUser.uid}_${jogoId}`), {
-                usuarioId: auth.currentUser.uid,
-                usuarioNome: document.getElementById('display-name').innerText,
-                jogoId: jogoId, confronto: `${timeA} x ${timeB}`, palpite: `${gA}x${gB}`, dataAposta: new Date()
+        window.salvarPalpite = async (id, tA, tB) => {
+            const vA = document.getElementById('pA-'+id).value;
+            const vB = document.getElementById('pB-'+id).value;
+            await setDoc(doc(db, "palpites", auth.currentUser.uid + "_" + id), {
+                userId: auth.currentUser.uid, jogoId: id, palpite: vA+"x"+vB
             });
-            alert("✅ Palpite salvo!");
+            alert("Palpite registrado!");
         };
 
-        window.showSection = (section) => {
-            document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active-section'));
-            document.getElementById('sec-' + section).classList.add('active-section');
+        window.showSection = (s) => {
+            document.querySelectorAll('.content-section').forEach(sec => sec.classList.remove('active-section'));
+            document.getElementById('sec-'+s).classList.add('active-section');
             document.getElementById('sidebar').classList.remove('active');
         };
 
@@ -327,10 +365,9 @@
         document.getElementById('btn-logout').onclick = () => signOut(auth);
         document.getElementById('menu-icon').onclick = () => document.getElementById('sidebar').classList.toggle('active');
         document.getElementById('btn-theme').onclick = () => document.body.hasAttribute('data-theme') ? document.body.removeAttribute('data-theme') : document.body.setAttribute('data-theme', 'dark');
-        
         window.updateProfileName = async () => {
             const n = document.getElementById('edit-name').value;
-            if (n) { await updateDoc(doc(db, "usuarios", auth.currentUser.uid), { nome: n }); location.reload(); }
+            if(n) { await updateDoc(doc(db, "usuarios", auth.currentUser.uid), { nome: n }); location.reload(); }
         };
     </script>
 </body>
