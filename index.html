@@ -226,7 +226,7 @@
             
             <div class="card">
                 <h3>🤖 Automação de Jogos (API)</h3>
-                <p style="font-size: 0.9em; color: #666;">No futuro, aqui conectaremos a uma API oficial (ex: API-Football). Por enquanto, gere jogos testes com um clique:</p>
+                <p style="font-size: 0.9em; color: #666;">No futuro, aqui conectaremos a uma API oficial. Por enquanto, gere jogos testes com um clique:</p>
                 <button class="primary" style="background: #28a745" onclick="gerarJogosAutomaticos()">Buscar Jogos (Simulação)</button>
             </div>
 
@@ -269,30 +269,25 @@
         // --- SISTEMA DE LOGIN E ROTEAMENTO ---
         onAuthStateChanged(auth, async (user) => {
             if (user) {
-                // Checa se o usuário já existe no banco!
                 const userRef = doc(db, "usuarios", user.uid);
                 const docSnap = await getDoc(userRef);
                 
                 if (docSnap.exists()) {
-                    // Já tem conta, vai direto pro Dashboard!
                     loadUserDashboard(docSnap.data());
                 } else {
-                    // Não tem conta, mostra tela de foto/nome
                     document.getElementById('login-screen').classList.remove('active-screen');
                     document.getElementById('setup-perfil').classList.add('active-screen');
                     
-                    // Lógica para selecionar avatar padrão
                     document.querySelectorAll('.avatar-option').forEach(img => {
                         img.onclick = () => {
                             document.querySelectorAll('.avatar-option').forEach(i => i.classList.remove('selected'));
                             img.classList.add('selected'); 
                             avatarEscolha = img.src;
-                            document.getElementById('preview-img').style.display = 'none'; // Esconde preview custom
+                            document.getElementById('preview-img').style.display = 'none'; 
                         };
                     });
                 }
             } else {
-                // Deslogado, mostra tela inicial
                 document.getElementById('main-content').style.display = 'none';
                 document.getElementById('setup-perfil').classList.remove('active-screen');
                 document.getElementById('login-screen').classList.add('active-screen');
@@ -306,7 +301,6 @@
 
             const reader = new FileReader();
             reader.onload = function(event) {
-                // Cria um canvas para redimensionar a imagem e deixá-la leve
                 const img = new Image();
                 img.onload = function() {
                     const canvas = document.createElement('canvas');
@@ -314,10 +308,8 @@
                     canvas.width = 150; canvas.height = 150;
                     ctx.drawImage(img, 0, 0, 150, 150);
                     
-                    // Transforma em Base64 leve
                     avatarEscolha = canvas.toDataURL('image/jpeg', 0.8);
                     
-                    // Mostra na bolinha de preview
                     const preview = document.getElementById('preview-img');
                     preview.src = avatarEscolha;
                     preview.style.display = 'block';
@@ -332,13 +324,12 @@
             const nome = document.getElementById('setup-nome').value;
             if (!nome || !avatarEscolha) return alert("Digite seu nome e escolha uma imagem!");
             
-            // Verifica se é o seu email para dar privilégio de Admin
             const isAdmin = auth.currentUser.email === "souldketchup@gmail.com";
             
             await setDoc(doc(db, "usuarios", auth.currentUser.uid), {
                 nome, avatar: avatarEscolha, pontos: 0, email: auth.currentUser.email, isAdmin, status: "aprovado"
             });
-            location.reload(); // Recarrega para entrar direto no dashboard
+            location.reload(); 
         };
 
         // --- CARREGAR DASHBOARD ---
@@ -347,26 +338,23 @@
             document.getElementById('login-screen').classList.remove('active-screen');
             document.getElementById('main-content').style.display = 'block';
             
-            // Preenche dados da tela
-            document.getElementById('display-name').innerText = data.nome.split(' ')[0]; // Pega só o primeiro nome
+            document.getElementById('display-name').innerText = data.nome.split(' ')[0]; 
             document.getElementById('home-points').innerText = data.pontos;
             
             document.getElementById('my-name').innerText = data.nome;
             document.getElementById('my-avatar').src = data.avatar;
 
-            // Mostra aba Admin só se for você
             if (data.isAdmin) {
                 document.getElementById('menu-admin').style.display = 'block';
             }
 
             loadRanking();
-            carregarJogosParaAposta();
+            carregarJogosAutomaticos(); // <- AQUI MUDOU: Chama a nova função
         }
 
-        // --- RANKING (TOP 50 e > 0 Pontos) ---
+        // --- RANKING ---
         async function loadRanking() {
             try {
-                // ATENÇÃO: Essa query vai pedir pra você criar um Índice no Firebase na primeira vez que rodar!
                 const q = query(collection(db, "usuarios"), where("pontos", ">", 0), orderBy("pontos", "desc"), limit(50));
                 const snap = await getDocs(q);
                 
@@ -390,13 +378,102 @@
                 });
                 document.getElementById('ranking-list').innerHTML = html + "</table>";
             } catch (e) {
-                // Se der erro de índice no console, pega o link lá e cria no Firebase
-                console.error("Erro no ranking (Você precisa criar o Índice no Firebase Console, clique no link do erro!): ", e);
-                document.getElementById('ranking-list').innerHTML = "<p>Atualizando ranking no banco de dados...</p>";
+                console.error("Erro no ranking (Verifique os índices no Firebase): ", e);
+                document.getElementById('ranking-list').innerHTML = "<p style='color:red;'>Erro ao carregar ranking. Verifique o console.</p>";
             }
         }
 
-        // --- ADMIN: GERAR JOGOS AUTOMÁTICOS (MOCKUP) ---
+        // --- NOVA FUNÇÃO: CARREGAR JOGOS DO ROBÔ ---
+        async function carregarJogosAutomaticos() {
+            const container = document.getElementById('lista-jogos-disponiveis'); // <- Apontando para a div certa do seu HTML
+            if (!container) return;
+
+            container.innerHTML = "<p style='text-align:center;'>Buscando partidas no banco de dados...</p>";
+
+            try {
+                // Busca TODOS os jogos que o robô salvou e que não estão finalizados
+                const q = query(collection(db, "jogos"), where("finalizado", "==", false));
+                const querySnapshot = await getDocs(q);
+                
+                // Atualiza o contador na tela Início
+                document.getElementById('home-games-count').innerText = querySnapshot.size;
+                
+                container.innerHTML = ""; 
+
+                if (querySnapshot.empty) {
+                    container.innerHTML = "<p style='text-align:center;'>Nenhum jogo disponível no momento. Volte mais tarde!</p>";
+                    return;
+                }
+
+                querySnapshot.forEach((doc) => {
+                    const jogo = doc.data();
+                    const id = doc.id;
+
+                    // O HTML com o estilo do seu print para combinar com o site
+                    container.innerHTML += `
+                        <div class="card" style="border-radius: 20px; background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); padding: 20px; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+                            <div style="text-align:center; font-size: 0.8em; color: var(--accent-color); margin-bottom: 15px; font-weight: bold; text-transform: uppercase;">
+                                ${jogo.campeonato} • ${jogo.data_bruta || jogo.data || 'Horário a definir'}
+                            </div>
+                            
+                            <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+                                <div style="text-align: center; width: 40%;">
+                                    <div style="font-weight: bold; margin-bottom: 10px; font-size: 0.9em;">${jogo.timeA}</div>
+                                    <input type="number" id="pA-${id}" style="width: 50px; text-align: center; border-radius: 8px; border: 2px solid #eee; padding: 8px; font-weight: bold;" placeholder="0">
+                                </div>
+                                
+                                <div style="font-weight: bold; color: var(--text-color); font-size: 1.2em;">X</div>
+                                
+                                <div style="text-align: center; width: 40%;">
+                                    <div style="font-weight: bold; margin-bottom: 10px; font-size: 0.9em;">${jogo.timeB}</div>
+                                    <input type="number" id="pB-${id}" style="width: 50px; text-align: center; border-radius: 8px; border: 2px solid #eee; padding: 8px; font-weight: bold;" placeholder="0">
+                                </div>
+                            </div>
+
+                            <button onclick="salvarPalpite('${id}')" style="width: 100%; margin-top: 20px; border-radius: 12px; background: var(--primary-grad); color: white; border: none; padding: 12px; font-weight: bold; cursor: pointer; transition: 0.3s; text-transform: uppercase;">
+                                CONFIRMAR PALPITE
+                            </button>
+                        </div>
+                    `;
+                });
+            } catch (e) {
+                console.error("Erro ao carregar jogos: ", e);
+                container.innerHTML = "<p style='text-align: center; color: red;'>Erro ao carregar os jogos. Verifique os índices do Firestore.</p>";
+            }
+        }
+
+        // --- NOVA FUNÇÃO: SALVAR PALPITE ---
+        window.salvarPalpite = async (id) => {
+            const valA = document.getElementById(`pA-${id}`).value;
+            const valB = document.getElementById(`pB-${id}`).value;
+            
+            if (valA === "" || valB === "") {
+                alert("Por favor, preencha o placar completo!");
+                return;
+            }
+            
+            if (!auth.currentUser) {
+                alert("Você precisa estar logado para palpitar!");
+                return;
+            }
+
+            try {
+                // Salva na coleção "palpites" com ID único (usuario + jogo)
+                await setDoc(doc(db, "palpites", `${auth.currentUser.uid}_${id}`), {
+                    usuarioNome: auth.currentUser.displayName || "Usuário",
+                    usuarioId: auth.currentUser.uid,
+                    jogoId: id,
+                    placar: `${valA}x${valB}`,
+                    data_palpite: new Date()
+                });
+                alert("Palpite registrado com sucesso! Boa sorte! 🍀");
+            } catch (e) {
+                console.error("Erro ao salvar:", e);
+                alert("Erro ao enviar palpite. Verifique sua conexão.");
+            }
+        };
+
+        // --- ADMIN: GERAR JOGOS FAKE E ADICIONAR MANUAL ---
         window.gerarJogosAutomaticos = async () => {
             alert("Buscando jogos (Simulação)...");
             const jogosFakes = [
@@ -411,11 +488,10 @@
                 });
             }
             alert("Jogos importados com sucesso!");
-            carregarJogosParaAposta();
+            carregarJogosAutomaticos(); // <- Atualizado aqui também
             showSection('campeonatos');
         }
 
-        // --- MANTER OUTRAS FUNÇÕES ---
         window.adicionarJogoBD = async () => {
             const camp = document.getElementById('adm-camp-nome').value;
             const tA = document.getElementById('adm-time-a').value;
@@ -424,54 +500,11 @@
             if(!camp || !tA || !tB) return alert("Preencha todos os campos!");
             await setDoc(doc(db, "jogos", "jogo_" + Date.now()), { campeonato: camp, timeA: tA, timeB: tB, data, finalizado: false });
             alert("Jogo no ar!"); 
-            carregarJogosParaAposta();
+            carregarJogosAutomaticos(); // <- Atualizado aqui também
             showSection('campeonatos');
         };
 
-        async function carregarJogosParaAposta() {
-            const q = query(collection(db, "jogos"), where("finalizado", "==", false));
-            const snap = await getDocs(q);
-            document.getElementById('home-games-count').innerText = snap.size; // Atualiza contador da Home
-            
-            const container = document.getElementById('lista-jogos-disponiveis');
-            container.innerHTML = "";
-            
-            if(snap.empty) {
-                container.innerHTML = "<p>Nenhum jogo aberto no momento. Volte mais tarde!</p>";
-                return;
-            }
-
-            snap.forEach(doc => {
-                const j = doc.data();
-                // Ocultar a data de formatação feia e fazer algo mais limpo, mas vou manter simples
-                container.innerHTML += `
-                    <div class="card">
-                        <div style="font-size:0.8em; color:#888; text-align:center; margin-bottom:10px">${j.campeonato}</div>
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <div style="flex:1; text-align:center"><strong>${j.timeA}</strong></div>
-                            <input type="number" id="pA-${doc.id}" style="width:40px; text-align:center;">
-                            <div style="padding: 0 10px; font-weight:bold; color:#888;">X</div>
-                            <input type="number" id="pB-${doc.id}" style="width:40px; text-align:center;">
-                            <div style="flex:1; text-align:center"><strong>${j.timeB}</strong></div>
-                        </div>
-                        <div style="text-align:center; margin-top:15px;">
-                            <button class="primary" onclick="salvarPalpite('${doc.id}', '${j.timeA}', '${j.timeB}')" style="width:100%">Confirmar Palpite</button>
-                        </div>
-                    </div>`;
-            });
-        }
-
-        window.salvarPalpite = async (id, tA, tB) => {
-            const vA = document.getElementById('pA-'+id).value;
-            const vB = document.getElementById('pB-'+id).value;
-            if(vA === "" || vB === "") return alert("Preencha os dois placares!");
-            
-            await setDoc(doc(db, "palpites", auth.currentUser.uid + "_" + id), {
-                userId: auth.currentUser.uid, jogoId: id, palpite: vA+"x"+vB, timeTimestamp: Date.now()
-            });
-            alert("Palpite registrado com sucesso!");
-        };
-
+        // --- NAVEGAÇÃO E OUTROS ---
         window.showSection = (s) => {
             document.querySelectorAll('.content-section').forEach(sec => sec.classList.remove('active-section'));
             document.getElementById('sec-'+s).classList.add('active-section');
