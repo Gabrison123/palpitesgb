@@ -1,31 +1,43 @@
 import firebase_admin
 from firebase_admin import credentials, firestore
+import requests
 import os
 import json
 
-# Aqui o robô pega a chave que você colou no GitHub Secrets
-service_account_info = json.loads(os.environ.get('FIREBASE_SERVICE_ACCOUNT_KEY'))
-cred = credentials.Certificate(service_account_info)
+# Configuração do Firebase via GitHub Secrets
+if os.environ.get('FIREBASE_SERVICE_ACCOUNT_KEY'):
+    cred_json = json.loads(os.environ.get('FIREBASE_SERVICE_ACCOUNT_KEY'))
+    cred = credentials.Certificate(cred_json)
+    firebase_admin.initialize_app(cred)
+    db = firestore.client()
 
-# Inicializa o Firebase (usando Firestore, que é o que aparece no seu print)
-firebase_admin.initialize_app(cred)
-db = firestore.client()
-
-def atualizar_jogos():
-    # Aqui entraria a lógica de buscar na API de Futebol
-    # Por enquanto, vamos simular a gravação de um jogo real
-    novo_jogo = {
-        "campeonato": "Champions League",
-        "timeA": "Real Madrid",
-        "timeB": "Manchester City",
-        "data": "2026-03-20T20:00",
-        "finalizado": False,
-        "pontos_atribuidos": False
+def buscar_e_atualizar():
+    # Usando a API-Football que você abriu no navegador
+    url = "https://v3.football.api-sports.io/fixtures?league=71&season=2026&next=10" # League 71 = Brasileirão
+    headers = {
+        'x-rapidapi-key': os.environ.get('FOOTBALL_API_KEY'),
+        'x-rapidapi-host': 'v3.football.api-sports.io'
     }
-    
-    # Salva no banco igual o seu site espera ler
-    db.collection("jogos").add(novo_jogo)
-    print("Jogo atualizado com sucesso!")
+
+    response = requests.get(url, headers=headers)
+    dados = response.json()
+
+    for item in dados['response']:
+        jogo_id = str(item['fixture']['id'])
+        dados_jogo = {
+            "campeonato": item['league']['name'],
+            "timeA": item['teams']['home']['name'],
+            "logoA": item['teams']['home']['logo'],
+            "timeB": item['teams']['away']['name'],
+            "logoB": item['teams']['away']['logo'],
+            "data": item['fixture']['date'],
+            "finalizado": False,
+            "tipo": "oficial"
+        }
+        
+        # Salva ou atualiza no Firestore
+        db.collection("jogos").document(jogo_id).set(dados_jogo)
+        print(f"Adicionado: {dados_jogo['timeA']} x {dados_jogo['timeB']}")
 
 if __name__ == "__main__":
-    atualizar_jogos()
+    buscar_e_atualizar()
