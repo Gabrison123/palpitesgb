@@ -1,65 +1,55 @@
 import requests
 import firebase_admin
 from firebase_admin import credentials, firestore
+import time
 
-# --- 1. CONFIGURAÇÃO DO FIREBASE ---
-# Baixe seu arquivo JSON no Console do Firebase (Configurações do Projeto > Contas de Serviço)
+# --- CONFIGURAÇÃO INICIAL ---
 if not firebase_admin._apps:
     cred = credentials.Certificate("sua-chave-firebase.json")
     firebase_admin.initialize_app(cred)
 
 db = firestore.client()
-
-# --- 2. CONFIGURAÇÃO DA API DE FUTEBOL ---
 API_KEY = "SUA_CHAVE_AQUI"
-HEADERS = {
-    'x-rapidapi-key': API_KEY,
-    'x-rapidapi-host': 'v3.football.api-sports.io'
-}
+HEADERS = {'x-rapidapi-key': API_KEY, 'x-rapidapi-host': 'v3.football.api-sports.io'}
 
-# IDs que você quer buscar (71 = Brasileirão Série A, 2 = Champions League)
-CAMPEONATOS_ALVO = [71, 2]
-
-def sincronizar_rodada(data_selecionada):
-    """
-    Busca jogos reais e salva no Firestore com IDs únicos.
-    Formato da data: 'YYYY-MM-DD'
-    """
-    print(f"Iniciando busca para o dia {data_selecionada}...")
+def buscar_e_gravar_jogos(league_id):
+    # Pega a data de hoje automaticamente (ex: 2026-03-16)
+    hoje = time.strftime("%Y-%m-%d") 
+    url = f"https://v3.football.api-sports.io/fixtures?date={hoje}&league={league_id}&timezone=America/Sao_Paulo"
     
-    url = f"https://v3.football.api-sports.io/fixtures?date={data_selecionada}&timezone=America/Sao_Paulo"
     response = requests.get(url, headers=HEADERS)
     dados = response.json()
 
-    if "response" not in dados or not dados["response"]:
-        print("Nenhum jogo encontrado para esta data.")
-        return
-
-    # Referência da coleção onde ficam os palpites
-    jogos_ref = db.collection("jogos_abertos")
-
-    for item in dados["response"]:
-        league_id = item["league"]["id"]
-
-        # FILTRO: Só processa se for um dos campeonatos que você quer
-        if league_id in CAMPEONATOS_ALVO:
-            fixture_id = str(item["fixture"]["id"]) # ID único da partida
-            
-            # Monta o objeto exatamente como seu banco precisa
-            objeto_jogo = {
-                "id_partida": fixture_id,
+    if "response" in dados:
+        for item in dados["response"]:
+            fid = str(item["fixture"]["id"])
+            dados_jogo = {
+                "id_partida": fid,
                 "campeonato": item["league"]["name"],
                 "time_casa": item["teams"]["home"]["name"],
-                "logo_casa": item["teams"]["home"]["logo"], # URL oficial da imagem
+                "logo_casa": item["teams"]["home"]["logo"], # Garante o escudo correto
                 "time_fora": item["teams"]["away"]["name"],
-                "logo_fora": item["teams"]["away"]["logo"], # URL oficial da imagem
-                "data_iso": item["fixture"]["date"],
-                "status": "pendente"
+                "logo_fora": item["teams"]["away"]["logo"], # Garante o escudo correto
+                "data_hora": item["fixture"]["date"],
+                "status": "aberto"
             }
+            # Grava usando o ID da partida para não duplicar
+            db.collection("jogos_abertos").document(fid).set(dados_jogo)
+            print(f"Adicionado: {dados_jogo['time_casa']} x {dados_jogo['time_fora']}")
 
-            # SALVA NO FIREBASE: Usar .document(fixture_id) impede nomes aleatórios e duplicados
-            jogos_ref.document(fixture_id).set(objeto_jogo)
-            print(f"Sucesso: {objeto_jogo['time_casa']} x {objeto_jogo['time_fora']}")
-
-# Exemplo de uso:
-sincronizar_rodada("2026-03-20")
+# LOOP DE VIGILÂNCIA
+print("Aguardando comando pelo Firebase...")
+while True:
+    comando_ref = db.collection("configuracoes").document("comando_busca")
+    doc = comando_ref.get()
+    
+    if doc.exists:
+        comando = doc.to_dict()
+        if comando.get("status") == "executar":
+            print(f"Comando recebido para League ID: {comando['league_id']}")
+            buscar_e_gravar_jogos(comando['league_id'])
+            
+            # Volta o status para "concluido" para não ficar repetindo
+            comando_ref.update({"status": "concluido"})
+    
+    time.sleep(10) # Verifica a cada 10 segundos
