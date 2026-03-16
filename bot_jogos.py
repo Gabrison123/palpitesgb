@@ -6,14 +6,21 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 from datetime import datetime
 
-# --- CONFIGURAÇÃO DO FIREBASE (GITHUB OU LOCAL) ---
-firebase_key_raw = os.getenv('FIREBASE_KEY_JSON')
+# --- CONFIGURAÇÃO DO FIREBASE ---
+# Ajustado para ler a Secret exata do seu GitHub: FIREBASE_KEY
+chave_github = os.getenv('FIREBASE_KEY')
 
-if firebase_key_raw:
-    cred_dict = json.loads(firebase_key_raw)
-    cred = credentials.Certificate(cred_dict)
+if chave_github:
+    print("✅ Conectado ao GitHub Actions: Usando Secret FIREBASE_KEY.")
+    try:
+        cred_dict = json.loads(chave_github)
+        cred = credentials.Certificate(cred_dict)
+    except Exception as e:
+        print(f"❌ Erro ao converter a Secret para JSON: {e}")
+        exit(1)
 else:
-    # Se estiver no seu PC, use o arquivo físico
+    print("⚠️ FIREBASE_KEY não encontrada no ambiente. Tentando modo local...")
+    # No seu PC, o arquivo deve ter esse nome:
     cred = credentials.Certificate("firebase-key.json")
 
 if not firebase_admin._apps:
@@ -21,50 +28,49 @@ if not firebase_admin._apps:
 
 db = firestore.client()
 
-# --- FUNÇÃO DO ROBÔ HACKER (SCRAPING) ---
+# --- FUNÇÃO DE SCRAPING (GE) ---
 def buscar_jogos_ge():
-    # URL do Brasileirão no GE
     url = "https://ge.globo.com/futebol/brasileirao-serie-a/"
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
     }
     
-    response = requests.get(url, headers=headers)
-    soup = BeautifulSoup(response.text, 'html.parser')
+    try:
+        response = requests.get(url, headers=headers)
+        soup = BeautifulSoup(response.text, 'html.parser')
 
-    # No GE, os jogos costumam ficar dentro de tags <article> ou <li> com classes específicas
-    # As classes abaixo são exemplos comuns, mas o GE pode variar conforme a rodada
-    jogos = soup.find_all('li', class_='lista-jogos__item')
+        # Buscando os itens da lista de jogos
+        jogos = soup.find_all('li', class_='lista-jogos__item')
 
-    if not jogos:
-        print("Atenção: Não encontrei jogos. As classes do site podem ter mudado.")
-        return
+        if not jogos:
+            print("❌ Não encontrei jogos. Verifique se as classes do GE mudaram.")
+            return
 
-    for jogo in jogos:
-        try:
-            # Pegando o nome dos times
-            time_casa = jogo.find('div', class_='jogo-equipes__equipe--casa').find('span', class_='equipe-nome').text
-            time_fora = jogo.find('div', class_='jogo-equipes__equipe--fora').find('span', class_='equipe-nome').text
-            
-            # Pegando a data e hora (Ex: "Sáb 16/03 16:00")
-            info_data = jogo.find('div', class_='jogo-informacoes').text.strip()
-            
-            # Criando um ID único para não duplicar o jogo no seu banco
-            id_jogo = f"ge_2026_{time_casa.replace(' ', '')}_{time_fora.replace(' ', '')}"
-            
-            # Enviando para o Firestore do palpitesGB
-            db.collection('jogos').document(id_jogo).set({
-                'campeonato': 'Brasileirão',
-                'timeA': time_casa,
-                'timeB': time_fora,
-                'data_bruta': info_data, # Texto como aparece no site
-                'data': datetime.now().isoformat(), # Hora que foi importado
-                'finalizado': False
-            })
-            print(f"✅ Adicionado: {time_casa} x {time_fora}")
-            
-        except Exception as e:
-            print(f"Erro ao processar um jogo: {e}")
+        for jogo in jogos:
+            try:
+                time_casa = jogo.find('div', class_='jogo-equipes__equipe--casa').find('span', class_='equipe-nome').text
+                time_fora = jogo.find('div', class_='jogo-equipes__equipe--fora').find('span', class_='equipe-nome').text
+                info_data = jogo.find('div', class_='jogo-informacoes').text.strip()
+                
+                # Cria um ID baseado nos times para não duplicar
+                id_jogo = f"ge_2026_{time_casa.replace(' ', '')}_{time_fora.replace(' ', '')}"
+                
+                db.collection('jogos').document(id_jogo).set({
+                    'campeonato': 'Brasileirão',
+                    'timeA': time_casa,
+                    'timeB': time_fora,
+                    'data_bruta': info_data,
+                    'data': datetime.now().isoformat(),
+                    'finalizado': False
+                }, merge=True) # merge=True evita apagar dados extras se o jogo já existir
+                
+                print(f"✔️ {time_casa} x {time_fora} sincronizado.")
+                
+            except AttributeError:
+                continue # Pula itens que não são jogos reais (anúncios, etc)
 
-# Executa o robô
-buscar_jogos_ge()
+    except Exception as e:
+        print(f"❌ Erro geral no scraping: {e}")
+
+if __name__ == "__main__":
+    buscar_jogos_ge()
