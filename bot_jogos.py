@@ -1,43 +1,60 @@
+import requests
 import firebase_admin
 from firebase_admin import credentials, firestore
-import requests
-import os
-import json
 
-# Configuração do Firebase via GitHub Secrets
-if os.environ.get('FIREBASE_SERVICE_ACCOUNT_KEY'):
-    cred_json = json.loads(os.environ.get('FIREBASE_SERVICE_ACCOUNT_KEY'))
-    cred = credentials.Certificate(cred_json)
+# --- CONFIGURAÇÕES ---
+# 1. Substitua pelo caminho do seu arquivo JSON do Firebase
+if not firebase_admin._apps:
+    cred = credentials.Certificate("caminho/do/seu/firebase-key.json")
     firebase_admin.initialize_app(cred)
-    db = firestore.client()
 
-def buscar_e_atualizar():
-    # Usando a API-Football que você abriu no navegador
-    url = "https://v3.football.api-sports.io/fixtures?league=71&season=2026&next=10" # League 71 = Brasileirão
-    headers = {
-        'x-rapidapi-key': os.environ.get('FOOTBALL_API_KEY'),
-        'x-rapidapi-host': 'v3.football.api-sports.io'
-    }
+db = firestore.client()
 
-    response = requests.get(url, headers=headers)
-    dados = response.json()
+# 2. Sua chave da API-Football
+API_KEY = "SUA_API_KEY_AQUI"
+HEADERS = {
+    'x-rapidapi-key': API_KEY,
+    'x-rapidapi-host': 'v3.football.api-sports.io'
+}
 
-    for item in dados['response']:
-        jogo_id = str(item['fixture']['id'])
-        dados_jogo = {
-            "campeonato": item['league']['name'],
-            "timeA": item['teams']['home']['name'],
-            "logoA": item['teams']['home']['logo'],
-            "timeB": item['teams']['away']['name'],
-            "logoB": item['teams']['away']['logo'],
-            "data": item['fixture']['date'],
-            "finalizado": False,
-            "tipo": "oficial"
-        }
+# 3. IDs dos campeonatos (Brasileirão: 71, Champions: 2, Premier League: 39)
+CAMPEONATOS_PERMITIDOS = [71, 2]
+
+def atualizar_jogos_no_firebase(data_busca):
+    url = f"https://v3.football.api-sports.io/fixtures?date={data_busca}&timezone=America/Sao_Paulo"
+    
+    try:
+        response = requests.get(url, headers=HEADERS)
+        dados = response.json()
         
-        # Salva ou atualiza no Firestore
-        db.collection("jogos").document(jogo_id).set(dados_jogo)
-        print(f"Adicionado: {dados_jogo['timeA']} x {dados_jogo['timeB']}")
+        # Referência da sua coleção de jogos no Firestore
+        jogos_ref = db.collection("jogos_abertos") # Ajuste para o nome da sua coleção
 
-if __name__ == "__main__":
-    buscar_e_atualizar()
+        if "response" in dados:
+            for item in dados["response"]:
+                league_id = item["league"]["id"]
+                
+                # FILTRO DE CAMPEONATO
+                if league_id in CAMPEONATOS_PERMITIDOS:
+                    fixture_id = str(item["fixture"]["id"])
+                    
+                    dados_jogo = {
+                        "campeonato": item["league"]["name"],
+                        "campeonato_id": league_id,
+                        "time_casa": item["teams"]["home"]["name"],
+                        "logo_casa": item["teams"]["home"]["logo"], # URL oficial da imagem
+                        "time_fora": item["teams"]["away"]["name"],
+                        "logo_fora": item["teams"]["away"]["logo"], # URL oficial da imagem
+                        "data_hora": item["fixture"]["date"],
+                        "status": "aberto"
+                    }
+                    
+                    # Salva ou atualiza no Firebase usando o ID da partida como nome do documento
+                    jogos_ref.document(fixture_id).set(dados_jogo)
+                    print(f"Jogo adicionado: {dados_jogo['time_casa']} x {dados_jogo['time_fora']}")
+                    
+    except Exception as e:
+        print(f"Erro ao processar: {e}")
+
+# Execução (Ex: buscar jogos para o dia 20/03/2026)
+atualizar_jogos_no_firebase("2026-03-20")
