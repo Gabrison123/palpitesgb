@@ -132,7 +132,6 @@
         .rank-2 { color: silver; font-weight: bold; font-size: 1.1em; }
         .rank-3 { color: #cd7f32; font-weight: bold; font-size: 1.1em; }
 
-        /* Estilo para logos de times */
         .team-logo { width: 50px; height: 50px; object-fit: contain; margin-bottom: 8px; }
 
     </style>
@@ -166,7 +165,7 @@
             <div class="custom-preview"><img id="preview-img" style="width:100%; height:100%; display:none; object-fit:cover;"></div>
         </div>
 
-        <button class="primary" onclick="salvarPerfilInicial()" style="margin-top: 20px;">COMEÇAR A JOGAR</button>
+        <button class="primary" id="btn-salvar-perfil" style="margin-top: 20px;">COMEÇAR A JOGAR</button>
     </div>
 
     <div id="main-content" class="screen" style="display:none;">
@@ -204,7 +203,6 @@
 
         <section id="sec-ranking" class="content-section">
             <h2 class="hero-title" style="font-size: 2.5rem;">Top 50 Palpiteiros</h2>
-            <p style="color: #888">Apenas usuários com mais de 0 pontos aparecem aqui.</p>
             <div id="ranking-list" class="card">Carregando mestre dos palpites...</div>
         </section>
 
@@ -218,7 +216,6 @@
             <div class="card" style="text-align: center;">
                 <img id="my-avatar" src="" style="width: 150px; height: 150px; object-fit: cover; border-radius: 50%; border: 5px solid var(--accent-color);">
                 <h3 id="my-name" style="font-size: 1.8rem;"></h3>
-                <p>Mudar de nome?</p>
                 <input type="text" id="edit-name" placeholder="Novo nome" style="margin-bottom: 10px;">
                 <button class="primary" onclick="updateProfileName()">Salvar</button>
             </div>
@@ -226,25 +223,18 @@
 
         <section id="sec-admin" class="content-section">
             <h2 class="hero-title" style="font-size: 2.5rem; color: #ff0080;">Área do Chefe</h2>
-            
             <div class="card">
-                <h3>🤖 Automação de Jogos (API)</h3>
-                <p style="font-size: 0.9em; color: #666;">Os jogos buscados pelo robô do GitHub aparecem aqui automaticamente.</p>
-                <button class="primary" style="background: #28a745" onclick="gerarJogosAutomaticos()">Buscar Jogos (Simulação)</button>
+                <h3>🤖 Automação de Jogos</h3>
+                <button class="primary" style="background: #28a745" onclick="gerarJogosAutomaticos()">Simular Busca de Jogos</button>
             </div>
-
             <div class="card">
                 <h3>➕ Adicionar Manualmente</h3>
                 <div style="display: flex; flex-direction: column; gap: 10px;">
-                    <input type="text" id="adm-camp-nome" placeholder="Nome do Campeonato (Ex: Brasileirão)">
-                    <div style="display: flex; gap: 10px;">
-                        <input type="text" id="adm-time-a" placeholder="Time Casa" style="flex:1">
-                        <input type="text" id="adm-time-b" placeholder="Time Fora" style="flex:1">
-                    </div>
-                    <div style="display: flex; gap: 10px;">
-                        <input type="url" id="adm-logo-a" placeholder="URL Logo Time A (Opcional)" style="flex:1">
-                        <input type="url" id="adm-logo-b" placeholder="URL Logo Time B (Opcional)" style="flex:1">
-                    </div>
+                    <input type="text" id="adm-camp-nome" placeholder="Campeonato">
+                    <input type="text" id="adm-time-a" placeholder="Time Casa">
+                    <input type="text" id="adm-time-b" placeholder="Time Fora">
+                    <input type="url" id="adm-logo-a" placeholder="URL Logo Time A">
+                    <input type="url" id="adm-logo-b" placeholder="URL Logo Time B">
                     <input type="datetime-local" id="adm-jogo-data">
                     <button class="primary" onclick="adicionarJogoBD()">PUBLICAR PARTIDA</button>
                 </div>
@@ -273,234 +263,73 @@
 
         let avatarEscolha = "";
 
-        // --- SISTEMA DE LOGIN E ROTEAMENTO ---
+        // AUTH OBSERVER
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 const userRef = doc(db, "usuarios", user.uid);
                 const docSnap = await getDoc(userRef);
-                
                 if (docSnap.exists()) {
                     loadUserDashboard(docSnap.data());
                 } else {
-                    document.getElementById('login-screen').classList.remove('active-screen');
-                    document.getElementById('setup-perfil').classList.add('active-screen');
-                    
-                    document.querySelectorAll('.avatar-option').forEach(img => {
-                        img.onclick = () => {
-                            document.querySelectorAll('.avatar-option').forEach(i => i.classList.remove('selected'));
-                            img.classList.add('selected'); 
-                            avatarEscolha = img.src;
-                            document.getElementById('preview-img').style.display = 'none'; 
-                        };
-                    });
+                    showSetup();
                 }
             } else {
-                document.getElementById('main-content').style.display = 'none';
-                document.getElementById('setup-perfil').classList.remove('active-screen');
-                document.getElementById('login-screen').classList.add('active-screen');
+                toggleScreens('login');
             }
         });
 
-        // --- UPLOAD DE IMAGEM CUSTOMIZADA ---
-        document.getElementById('upload-avatar').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if(!file) return;
+        function toggleScreens(screen) {
+            document.getElementById('login-screen').classList.toggle('active-screen', screen === 'login');
+            document.getElementById('setup-perfil').classList.toggle('active-screen', screen === 'setup');
+            document.getElementById('main-content').style.display = screen === 'main' ? 'block' : 'none';
+        }
 
-            const reader = new FileReader();
-            reader.onload = function(event) {
-                const img = new Image();
-                img.onload = function() {
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
-                    canvas.width = 150; canvas.height = 150;
-                    ctx.drawImage(img, 0, 0, 150, 150);
-                    
-                    avatarEscolha = canvas.toDataURL('image/jpeg', 0.8);
-                    
-                    const preview = document.getElementById('preview-img');
-                    preview.src = avatarEscolha;
-                    preview.style.display = 'block';
+        function showSetup() {
+            toggleScreens('setup');
+            document.querySelectorAll('.avatar-option').forEach(img => {
+                img.onclick = () => {
                     document.querySelectorAll('.avatar-option').forEach(i => i.classList.remove('selected'));
-                }
-                img.src = event.target.result;
-            }
-            reader.readAsDataURL(file);
-        });
-
-        window.salvarPerfilInicial = async () => {
-            const nome = document.getElementById('setup-nome').value;
-            if (!nome || !avatarEscolha) return alert("Digite seu nome e escolha uma imagem!");
-            
-            const isAdmin = auth.currentUser.email === "souldketchup@gmail.com";
-            
-            await setDoc(doc(db, "usuarios", auth.currentUser.uid), {
-                nome, avatar: avatarEscolha, pontos: 0, email: auth.currentUser.email, isAdmin, status: "aprovado"
+                    img.classList.add('selected'); 
+                    avatarEscolha = img.src;
+                    document.getElementById('preview-img').style.display = 'none'; 
+                };
             });
-            location.reload(); 
-        };
+        }
 
-        // --- CARREGAR DASHBOARD ---
-        function loadUserDashboard(data) {
-            document.getElementById('setup-perfil').classList.remove('active-screen');
-            document.getElementById('login-screen').classList.remove('active-screen');
-            document.getElementById('main-content').style.display = 'block';
-            
+        // DASHBOARD
+        async function loadUserDashboard(data) {
+            toggleScreens('main');
             document.getElementById('display-name').innerText = data.nome.split(' ')[0]; 
             document.getElementById('home-points').innerText = data.pontos;
-            
             document.getElementById('my-name').innerText = data.nome;
             document.getElementById('my-avatar').src = data.avatar;
 
-            if (data.isAdmin) {
-                document.getElementById('menu-admin').style.display = 'block';
-            }
+            if (data.isAdmin) document.getElementById('menu-admin').style.display = 'block';
 
             loadRanking();
-            carregarJogosAutomaticos(); 
+            carregarJogos(); 
         }
 
-        // --- RANKING ---
-        async function loadRanking() {
-            try {
-                const q = query(collection(db, "usuarios"), where("pontos", ">", 0), orderBy("pontos", "desc"), limit(50));
-                const snap = await getDocs(q);
-                
-                if(snap.empty) {
-                    document.getElementById('ranking-list').innerHTML = "<p>Ninguém pontuou ainda. Seja o primeiro!</p>";
-                    return;
-                }
+        // GLOBAL FUNCTIONS
+        window.showSection = (s) => {
+            document.querySelectorAll('.content-section').forEach(sec => sec.classList.remove('active-section'));
+            document.getElementById('sec-'+s).classList.add('active-section');
+            document.getElementById('sidebar').classList.remove('active');
+        };
 
-                let html = '<table>';
-                snap.forEach((d, i) => {
-                    const u = d.data();
-                    let rankClass = i === 0 ? 'rank-1' : i === 1 ? 'rank-2' : i === 2 ? 'rank-3' : '';
-                    let medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i+1}º`;
-                    
-                    html += `<tr>
-                        <td class="${rankClass}">${medal}</td>
-                        <td><img src="${u.avatar}" style="width:40px; height:40px; border-radius:50%; object-fit:cover;"></td>
-                        <td><strong>${u.nome}</strong></td>
-                        <td style="text-align:right; font-weight:bold; color:var(--accent-color)">${u.pontos} pts</td>
-                    </tr>`;
-                });
-                document.getElementById('ranking-list').innerHTML = html + "</table>";
-            } catch (e) {
-                console.error("Erro no ranking (Verifique os índices no Firebase): ", e);
-                document.getElementById('ranking-list').innerHTML = "<p style='color:red;'>Erro ao carregar ranking. Verifique o console.</p>";
-            }
-        }
-
-        // --- CARREGAR JOGOS DO ROBÔ COM LOGOS ---
-        async function carregarJogosAutomaticos() {
-            const container = document.getElementById('lista-jogos-disponiveis');
-            if (!container) return;
-
-            container.innerHTML = "<p style='text-align:center;'>Buscando partidas no banco de dados...</p>";
-
-            try {
-                const q = query(collection(db, "jogos"), where("finalizado", "==", false));
-                const querySnapshot = await getDocs(q);
-                
-                document.getElementById('home-games-count').innerText = querySnapshot.size;
-                container.innerHTML = ""; 
-
-                if (querySnapshot.empty) {
-                    container.innerHTML = "<p style='text-align:center;'>Nenhum jogo disponível no momento. Volte mais tarde!</p>";
-                    return;
-                }
-
-                querySnapshot.forEach((docSnap) => {
-                    const jogo = docSnap.data();
-                    const id = docSnap.id;
-                    const logoDefault = 'https://via.placeholder.com/50?text=?';
-
-                    container.innerHTML += `
-                        <div class="card" style="border-radius: 20px; background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); padding: 20px; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
-                            <div style="text-align:center; font-size: 0.8em; color: var(--accent-color); margin-bottom: 15px; font-weight: bold; text-transform: uppercase;">
-                                ${jogo.campeonato} • ${jogo.data_bruta || jogo.data || 'Horário a definir'}
-                                ${auth.currentUser && auth.currentUser.email === "souldketchup@gmail.com" ? `<br><span onclick="deletarJogo('${id}')" style="color:red; cursor:pointer; font-size: 0.7em;">[EXCLUIR JOGO]</span>` : ""}
-                            </div>
-                            
-                            <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px;">
-                                <div style="text-align: center; width: 40%;">
-                                    <img src="${jogo.logoA || logoDefault}" class="team-logo"><br>
-                                    <div style="font-weight: bold; margin-bottom: 10px; font-size: 0.9em;">${jogo.timeA}</div>
-                                    <input type="number" id="pA-${id}" style="width: 50px; text-align: center; border-radius: 8px; border: 2px solid #eee; padding: 8px; font-weight: bold;" placeholder="0">
-                                </div>
-                                
-                                <div style="font-weight: bold; color: var(--text-color); font-size: 1.2em;">X</div>
-                                
-                                <div style="text-align: center; width: 40%;">
-                                    <img src="${jogo.logoB || logoDefault}" class="team-logo"><br>
-                                    <div style="font-weight: bold; margin-bottom: 10px; font-size: 0.9em;">${jogo.timeB}</div>
-                                    <input type="number" id="pB-${id}" style="width: 50px; text-align: center; border-radius: 8px; border: 2px solid #eee; padding: 8px; font-weight: bold;" placeholder="0">
-                                </div>
-                            </div>
-
-                            <button onclick="salvarPalpite('${id}')" style="width: 100%; margin-top: 20px; border-radius: 12px; background: var(--primary-grad); color: white; border: none; padding: 12px; font-weight: bold; cursor: pointer; transition: 0.3s; text-transform: uppercase;">
-                                CONFIRMAR PALPITE
-                            </button>
-                        </div>
-                    `;
-                });
-            } catch (e) {
-                console.error("Erro ao carregar jogos: ", e);
-                container.innerHTML = "<p style='text-align: center; color: red;'>Erro ao carregar os jogos.</p>";
-            }
-        }
-
-        // --- SALVAR PALPITE ---
         window.salvarPalpite = async (id) => {
-            const valA = document.getElementById(`pA-${id}`).value;
-            const valB = document.getElementById(`pB-${id}`).value;
+            const vA = document.getElementById(`pA-${id}`).value;
+            const vB = document.getElementById(`pB-${id}`).value;
+            if (vA === "" || vB === "") return alert("Preencha o placar!");
             
-            if (valA === "" || valB === "") return alert("Preencha o placar!");
-            if (!auth.currentUser) return alert("Logue-se primeiro!");
-
-            try {
-                await setDoc(doc(db, "palpites", `${auth.currentUser.uid}_${id}`), {
-                    usuarioNome: auth.currentUser.displayName || "Usuário",
-                    usuarioId: auth.currentUser.uid,
-                    jogoId: id,
-                    placar: `${valA}x${valB}`,
-                    data_palpite: new Date()
-                });
-                alert("Palpite registrado! 🍀");
-            } catch (e) {
-                alert("Erro ao enviar palpite.");
-            }
+            await setDoc(doc(db, "palpites", `${auth.currentUser.uid}_${id}`), {
+                usuarioId: auth.currentUser.uid,
+                jogoId: id,
+                placar: `${vA}x${vB}`,
+                data_palpite: new Date()
+            });
+            alert("Palpite enviado!");
         };
-
-        // --- EXCLUIR JOGO (EXCLUSIVO ADMIN) ---
-        window.deletarJogo = async (id) => {
-            if(confirm("Deseja apagar este jogo permanentemente?")) {
-                try {
-                    await deleteDoc(doc(db, "jogos", id));
-                    alert("Jogo deletado!");
-                    carregarJogosAutomaticos();
-                } catch (e) {
-                    alert("Erro ao deletar.");
-                }
-            }
-        };
-
-        // --- ADMIN: GERAR JOGOS FAKE E ADICIONAR MANUAL ---
-        window.gerarJogosAutomaticos = async () => {
-            const jogosFakes = [
-                { camp: "Champions League", tA: "Real Madrid", tB: "Man. City", lA: "https://crests.football-data.org/86.png", lB: "https://crests.football-data.org/65.png" },
-                { camp: "Brasileirão", tA: "Flamengo", tB: "Palmeiras", lA: "https://crests.football-data.org/1779.png", lB: "https://crests.football-data.org/1770.png" }
-            ];
-            
-            for(let j of jogosFakes) {
-                await setDoc(doc(db, "jogos", "jogo_auto_" + Date.now() + Math.floor(Math.random()*1000)), { 
-                    campeonato: j.camp, timeA: j.tA, timeB: j.tB, logoA: j.lA, logoB: j.lB,
-                    data: "2026-03-20T20:00", finalizado: false, tipo: "simulacao"
-                });
-            }
-            alert("Jogos importados!");
-            carregarJogosAutomaticos();
-            showSection('campeonatos');
-        }
 
         window.adicionarJogoBD = async () => {
             const camp = document.getElementById('adm-camp-nome').value;
@@ -510,37 +339,91 @@
             const lB = document.getElementById('adm-logo-b').value;
             const data = document.getElementById('adm-jogo-data').value;
             
-            if(!camp || !tA || !tB) return alert("Preencha os campos obrigatórios!");
-            
-            await setDoc(doc(db, "jogos", "jogo_" + Date.now()), { 
-                campeonato: camp, timeA: tA, timeB: tB, logoA: lA, logoB: lB, 
-                data, finalizado: false, tipo: "oficial" 
+            await setDoc(doc(db, "jogos", "jogo_" + Date.now()), {
+                campeonato: camp, timeA: tA, timeB: tB, logoA: lA, logoB: lB,
+                data, finalizado: false
             });
-            alert("Jogo no ar!"); 
-            carregarJogosAutomaticos();
-            showSection('campeonatos');
+            alert("Jogo adicionado!");
+            carregarJogos();
         };
 
-        // --- NAVEGAÇÃO E OUTROS ---
-        window.showSection = (s) => {
-            document.querySelectorAll('.content-section').forEach(sec => sec.classList.remove('active-section'));
-            document.getElementById('sec-'+s).classList.add('active-section');
-            document.getElementById('sidebar').classList.remove('active');
+        window.deletarJogo = async (id) => {
+            if(confirm("Excluir?")) {
+                await deleteDoc(doc(db, "jogos", id));
+                carregarJogos();
+            }
         };
 
+        async function carregarJogos() {
+            const container = document.getElementById('lista-jogos-disponiveis');
+            const q = query(collection(db, "jogos"), where("finalizado", "==", false));
+            const snap = await getDocs(q);
+            document.getElementById('home-games-count').innerText = snap.size;
+            container.innerHTML = "";
+            snap.forEach(d => {
+                const j = d.data();
+                container.innerHTML += `
+                    <div class="card">
+                        <small>${j.campeonato} | ${j.data || ''}</small>
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
+                            <div style="text-align:center; width:40%">
+                                <img src="${j.logoA || ''}" class="team-logo" onerror="this.src='https://via.placeholder.com/50'"><br>${j.timeA}
+                                <input type="number" id="pA-${d.id}" style="width:40px">
+                            </div>
+                            <span>VS</span>
+                            <div style="text-align:center; width:40%">
+                                <img src="${j.logoB || ''}" class="team-logo" onerror="this.src='https://via.placeholder.com/50'"><br>${j.timeB}
+                                <input type="number" id="pB-${d.id}" style="width:40px">
+                            </div>
+                        </div>
+                        <button class="primary" onclick="salvarPalpite('${d.id}')" style="width:100%; margin-top:10px">SALVAR</button>
+                        ${auth.currentUser.email === 'souldketchup@gmail.com' ? `<button onclick="deletarJogo('${d.id}')" style="color:red; background:none; border:none; cursor:pointer; width:100%; margin-top:5px">Remover</button>` : ''}
+                    </div>`;
+            });
+        }
+
+        async function loadRanking() {
+            const q = query(collection(db, "usuarios"), where("pontos", ">", 0), orderBy("pontos", "desc"), limit(50));
+            const snap = await getDocs(q);
+            let html = '<table>';
+            snap.forEach((d, i) => {
+                const u = d.data();
+                html += `<tr><td>${i+1}º</td><td><img src="${u.avatar}" style="width:30px; border-radius:50%"></td><td>${u.nome}</td><td>${u.pontos}</td></tr>`;
+            });
+            document.getElementById('ranking-list').innerHTML = snap.empty ? "Nenhum ponto ainda." : html + '</table>';
+        }
+
+        // EVENT LISTENERS
         document.getElementById('btn-login').onclick = () => signInWithPopup(auth, provider);
         document.getElementById('btn-logout').onclick = () => signOut(auth);
         document.getElementById('menu-icon').onclick = () => document.getElementById('sidebar').classList.toggle('active');
         document.getElementById('btn-theme').onclick = () => {
             document.body.hasAttribute('data-theme') ? document.body.removeAttribute('data-theme') : document.body.setAttribute('data-theme', 'dark');
         };
-        
+
+        document.getElementById('upload-avatar').addEventListener('change', function(e) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                avatarEscolha = event.target.result;
+                const preview = document.getElementById('preview-img');
+                preview.src = avatarEscolha;
+                preview.style.display = 'block';
+            };
+            reader.readAsDataURL(e.target.files[0]);
+        });
+
+        document.getElementById('btn-salvar-perfil').onclick = async () => {
+            const nome = document.getElementById('setup-nome').value;
+            if (!nome || !avatarEscolha) return alert("Preencha tudo!");
+            await setDoc(doc(db, "usuarios", auth.currentUser.uid), {
+                nome, avatar: avatarEscolha, pontos: 0, email: auth.currentUser.email, isAdmin: auth.currentUser.email === "souldketchup@gmail.com"
+            });
+            location.reload();
+        };
+
         window.updateProfileName = async () => {
             const n = document.getElementById('edit-name').value;
-            if(n) { 
-                await updateDoc(doc(db, "usuarios", auth.currentUser.uid), { nome: n }); 
-                alert("Nome atualizado!"); location.reload(); 
-            }
+            if(n) { await updateDoc(doc(db, "usuarios", auth.currentUser.uid), { nome: n }); location.reload(); }
         };
     </script>
 </body>
