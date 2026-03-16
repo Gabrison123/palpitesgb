@@ -2,59 +2,64 @@ import requests
 import firebase_admin
 from firebase_admin import credentials, firestore
 
-# --- CONFIGURAÇÕES ---
-# 1. Substitua pelo caminho do seu arquivo JSON do Firebase
+# --- 1. CONFIGURAÇÃO DO FIREBASE ---
+# Baixe seu arquivo JSON no Console do Firebase (Configurações do Projeto > Contas de Serviço)
 if not firebase_admin._apps:
-    cred = credentials.Certificate("caminho/do/seu/firebase-key.json")
+    cred = credentials.Certificate("sua-chave-firebase.json")
     firebase_admin.initialize_app(cred)
 
 db = firestore.client()
 
-# 2. Sua chave da API-Football
-API_KEY = "SUA_API_KEY_AQUI"
+# --- 2. CONFIGURAÇÃO DA API DE FUTEBOL ---
+API_KEY = "SUA_CHAVE_AQUI"
 HEADERS = {
     'x-rapidapi-key': API_KEY,
     'x-rapidapi-host': 'v3.football.api-sports.io'
 }
 
-# 3. IDs dos campeonatos (Brasileirão: 71, Champions: 2, Premier League: 39)
-CAMPEONATOS_PERMITIDOS = [71, 2]
+# IDs que você quer buscar (71 = Brasileirão Série A, 2 = Champions League)
+CAMPEONATOS_ALVO = [71, 2]
 
-def atualizar_jogos_no_firebase(data_busca):
-    url = f"https://v3.football.api-sports.io/fixtures?date={data_busca}&timezone=America/Sao_Paulo"
+def sincronizar_rodada(data_selecionada):
+    """
+    Busca jogos reais e salva no Firestore com IDs únicos.
+    Formato da data: 'YYYY-MM-DD'
+    """
+    print(f"Iniciando busca para o dia {data_selecionada}...")
     
-    try:
-        response = requests.get(url, headers=HEADERS)
-        dados = response.json()
-        
-        # Referência da sua coleção de jogos no Firestore
-        jogos_ref = db.collection("jogos_abertos") # Ajuste para o nome da sua coleção
+    url = f"https://v3.football.api-sports.io/fixtures?date={data_selecionada}&timezone=America/Sao_Paulo"
+    response = requests.get(url, headers=HEADERS)
+    dados = response.json()
 
-        if "response" in dados:
-            for item in dados["response"]:
-                league_id = item["league"]["id"]
-                
-                # FILTRO DE CAMPEONATO
-                if league_id in CAMPEONATOS_PERMITIDOS:
-                    fixture_id = str(item["fixture"]["id"])
-                    
-                    dados_jogo = {
-                        "campeonato": item["league"]["name"],
-                        "campeonato_id": league_id,
-                        "time_casa": item["teams"]["home"]["name"],
-                        "logo_casa": item["teams"]["home"]["logo"], # URL oficial da imagem
-                        "time_fora": item["teams"]["away"]["name"],
-                        "logo_fora": item["teams"]["away"]["logo"], # URL oficial da imagem
-                        "data_hora": item["fixture"]["date"],
-                        "status": "aberto"
-                    }
-                    
-                    # Salva ou atualiza no Firebase usando o ID da partida como nome do documento
-                    jogos_ref.document(fixture_id).set(dados_jogo)
-                    print(f"Jogo adicionado: {dados_jogo['time_casa']} x {dados_jogo['time_fora']}")
-                    
-    except Exception as e:
-        print(f"Erro ao processar: {e}")
+    if "response" not in dados or not dados["response"]:
+        print("Nenhum jogo encontrado para esta data.")
+        return
 
-# Execução (Ex: buscar jogos para o dia 20/03/2026)
-atualizar_jogos_no_firebase("2026-03-20")
+    # Referência da coleção onde ficam os palpites
+    jogos_ref = db.collection("jogos_abertos")
+
+    for item in dados["response"]:
+        league_id = item["league"]["id"]
+
+        # FILTRO: Só processa se for um dos campeonatos que você quer
+        if league_id in CAMPEONATOS_ALVO:
+            fixture_id = str(item["fixture"]["id"]) # ID único da partida
+            
+            # Monta o objeto exatamente como seu banco precisa
+            objeto_jogo = {
+                "id_partida": fixture_id,
+                "campeonato": item["league"]["name"],
+                "time_casa": item["teams"]["home"]["name"],
+                "logo_casa": item["teams"]["home"]["logo"], # URL oficial da imagem
+                "time_fora": item["teams"]["away"]["name"],
+                "logo_fora": item["teams"]["away"]["logo"], # URL oficial da imagem
+                "data_iso": item["fixture"]["date"],
+                "status": "pendente"
+            }
+
+            # SALVA NO FIREBASE: Usar .document(fixture_id) impede nomes aleatórios e duplicados
+            jogos_ref.document(fixture_id).set(objeto_jogo)
+            print(f"Sucesso: {objeto_jogo['time_casa']} x {objeto_jogo['time_fora']}")
+
+# Exemplo de uso:
+sincronizar_rodada("2026-03-20")
